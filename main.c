@@ -15,9 +15,9 @@ void write_out_file(char* file_name, int* vector, int vector_size);
  */
 int main(int argc, char *argv[]) {
     // Hyper parameters
-    int POPULATION_SIZE = 400;
-    double SELECTION_PRESSURE = 3.0;
-    double CROSSOVER_THRESHOLD = 0.90;
+    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
+    double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
+    double CROSSOVER_THRESHOLD = 0.90; // x10 (0 ~ 1)
     double EXECUTION_TIME = 177.0;
 
     // Init randomness
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
         // Mutation
         int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
-        child[mutated_index] = child[mutated_index] == 1 ? 0 : 1;
+        child[mutated_index] = !child[mutated_index];
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
@@ -98,6 +98,7 @@ int main(int argc, char *argv[]) {
 
         // Update value of replaced solution
         values[worst_solution_index] = evaluate(graph_data, child);
+        fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
 
         // Update sum of fitness
         sum_of_fitnesses += fitnesses[worst_solution_index];
