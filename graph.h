@@ -5,6 +5,8 @@
 #ifndef MAXCUT_OPT_GRAPH2_H
 #define MAXCUT_OPT_GRAPH2_H
 
+#include <stdlib.h>
+
 struct Graph {
     int num_of_vertex;
     int num_of_edges;
@@ -12,5 +14,7 @@ struct Graph {
 };
 
 struct Graph init_graph(int v, int e, int** table);
+int evaluate(struct Graph graph, int* sol);
+void clear_graph(struct Graph graph);
 
 #endif //MAXCUT_OPT_GRAPH2_H
