@@ -1,30 +1,24 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/time.h>
 #include "graph.h"
-
-#define SAFE_FREE(a) if(a){free(a); a=NULL;} // for dynamic memory release
-
-// Get the sum of weights of a solution
-int get_sum_of_weight(int *sol, int sol_length, int **weight_table);
-
-// Get the index of parent for Roulette Wheel selection from Solutions
-int get_idx_of_parents(double *fitness, int sol_size, double fitnessSum);
+#include "util.h"
 
 struct Graph read_in_file(char* filename);
+void write_out_file(char* file_name, int* vector, int vector_size);
 
-void write_out_file(char* filename);
-
-int main(int argc, char *argv[])
-{
+/**
+ * Main func
+ * @param argc
+ * @param argv
+ * @return
+ */
+int main(int argc, char *argv[]) {
     // Hyper parameters
     int POPULATION_SIZE = 400;
     double SELECTION_PRESSURE = 3.0;
     double CROSSOVER_THRESHOLD = 0.90;
+    double EXECUTION_TIME = 177.0;
 
     // Init randomness
     srand(time(NULL));
@@ -33,7 +27,6 @@ int main(int argc, char *argv[])
     struct Graph graph_data = read_in_file("../maxcut.in");
     int** weight_table = graph_data.weight_table;
     int num_of_vertex = graph_data.num_of_vertex;
-    int num_of_edges = graph_data.num_of_edges;
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
@@ -45,26 +38,20 @@ int main(int argc, char *argv[])
         for(int j = 0; j < num_of_vertex; j++)
             solutions[i][j] = (int)(((double)rand() / ((double)(RAND_MAX) + 1.0)) * 2);
         fitnesses[i] = 0;
-        values[i] = get_sum_of_weight(solutions[i], num_of_vertex, weight_table);
+        values[i] = evaluate(graph_data, solutions[i]);
     }
 
-    // find worst and best values
-    int worst_solution_index = 0, worst_value = values[worst_solution_index];
-    int best_solution_index = 0, best_value = values[best_solution_index];
+    // update worst and best values
+    struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
+
+    int worst_solution_index = min_avg_max.min_idx;
+    int best_solution_index = min_avg_max.max_idx;
+
+    int worst_value = values[worst_solution_index];
+    int best_value = values[best_solution_index];
+
+    // Update fitness of each solution
     double sum_of_fitnesses = 0;
-
-    for (int i = 0; i < POPULATION_SIZE; ++i) {
-        if (values[i] > best_value) {
-            best_value = values[i];
-            best_solution_index = i;
-        }
-
-        if (values[i] < worst_value) {
-            worst_value = values[i];
-            worst_solution_index = i;
-        }
-    }
-
     for (int i = 0; i < POPULATION_SIZE; ++i) {
         int ci = values[i];
         int cw = worst_value;
@@ -75,20 +62,19 @@ int main(int argc, char *argv[])
     }
 
     clock_t start = clock();
-
     while(1) {
         clock_t now = clock();
         double time_spent = (double)(now - start) / CLOCKS_PER_SEC;
 
-        if (time_spent > 10)
+        if (time_spent > EXECUTION_TIME)
             break;
 
         // Selection
-        int idx_of_mother = get_idx_of_parents(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-        int idx_of_father = get_idx_of_parents(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        int idx_of_mother = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        int idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
 
-        while(idx_of_mother == idx_of_father)
-            idx_of_father = get_idx_of_parents(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
+            idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
 
         // Crossover
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
@@ -107,56 +93,30 @@ int main(int argc, char *argv[])
         for (int i = 0; i < num_of_vertex; ++i)
             solutions[worst_solution_index][i] = child[i];
 
+        // Before update value, reduce sum of fitness
+        sum_of_fitnesses -= fitnesses[worst_solution_index];
+
         // Update value of replaced solution
-        values[worst_solution_index] = get_sum_of_weight(child, num_of_vertex, weight_table);
+        values[worst_solution_index] = evaluate(graph_data, child);
+
+        // Update sum of fitness
+        sum_of_fitnesses += fitnesses[worst_solution_index];
 
         SAFE_FREE(child);
 
         // Update best, worst case solution
-        worst_solution_index = 0;
-        worst_value = values[worst_solution_index];
-        best_solution_index = 0;
+        min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
+
+        worst_solution_index = min_avg_max.min_idx;
+        best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
-        int sum_of_values = 0;
-        for (int i = 0; i < POPULATION_SIZE; ++i) {
-            if (values[i] > best_value) {
-                best_value = values[i];
-                best_solution_index = i;
-            }
-
-            if (values[i] < worst_value) {
-                worst_value = values[i];
-                worst_solution_index = i;
-            }
-
-            sum_of_values += values[i];
-        }
-
-        double avg_of_values = sum_of_values / (double) POPULATION_SIZE;
-
-        // Update sum of fitness
-        sum_of_fitnesses = 0;
-        for (int i = 0; i < POPULATION_SIZE; ++i) {
-            int ci = values[i];
-            int cw = worst_value;
-            int cb = best_value;
-
-            fitnesses[i] = (double)(ci - cw) + (cb - cw) / (SELECTION_PRESSURE - 1.0);
-            sum_of_fitnesses += fitnesses[i];
-        }
-
+        double avg_of_values = min_avg_max.avg_value;
         printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
     // Write output file
-    FILE* out_file = fopen("../maxcut.out", "w");
-    int flag = solutions[best_solution_index][0];
-    for (int i = 0; i < num_of_vertex; ++i)
-        // Warning: start index from '1'
-        if (solutions[best_solution_index][i] == flag)
-            fprintf(out_file, "%d ", i + 1);
-    fclose(out_file);
+    write_out_file("../maxcut.out", solutions[best_solution_index], num_of_vertex);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
         free(solutions[i]);
@@ -165,98 +125,6 @@ int main(int argc, char *argv[])
     for(int i = 0; i < num_of_vertex; i++)
         free(weight_table[i]);
     SAFE_FREE(weight_table);
-
-    return 0;
-}
-
-
-// Get the sum of weights of a solution
-// input: parents[i], length of parents[i], weight_table
-// output: sum of weights of parents[i]
-int get_sum_of_weight(int * sol, int sol_length, int ** weight_table)
-{
-    // Variables
-    int numOf0s = 0;
-    int numOf1s = 0;
-    int * s0 = NULL;
-    int * s1 = NULL;
-    int idxOfS0 = 0;
-    int idxOfS1 = 0;
-    int sum = 0;
-
-    // Find # of 0s in a solution
-    //printf("\nSOL: ");
-    for(int i = 0; i < sol_length; i++)
-    {
-        if(sol[i] == 0)
-            numOf0s++;
-        //printf("%d", sol[i]);
-    }
-    numOf1s = sol_length - numOf0s;
-    //printf("\n0s: %d, 1s: %d\n", numOf0s, numOf1s);
-
-    // split a solution into two groups, s0 & s1
-    // S0 for the index of 0s in a solution
-    // S1 for the index of 1s in a solution
-    s0 = (int*)malloc(numOf0s*sizeof(int));
-    s1 = (int*)malloc(numOf1s*sizeof(int));
-    // read a gene of a solution in turn
-    // if 0, then write it to s0
-    // else, then write it to s1
-    for(int i = 0; i < sol_length; i++)
-    {
-        if(sol[i] == 0)
-        {
-            s0[idxOfS0] = i;
-            //printf("V[%d]=%d->s0[%d]=%d\n", i, sol[i], idxOfS0, s0[idxOfS0]);
-            idxOfS0++;
-        }
-    }
-    for(int i = 0; i < sol_length; i++)
-    {
-        if(sol[i] == 1)
-        {
-            s1[idxOfS1] = i;
-            //printf("V[%d]=%d->s1[%d]=%d\n", i, sol[i], idxOfS1, s1[idxOfS1]);
-            idxOfS1++;
-        }
-    }
-    //printf("\n");
-
-    // Calculate the sum of weights by adding the weight of edges between s0 and s1
-    for(int i = 0; i < numOf0s; i++)
-    {
-        for(int j = 0; j < numOf1s; j++)
-        {
-            sum += weight_table[s0[i]][s1[j]];
-            //printf("sum=%d\n", sum);
-        }
-    }
-
-    // release memory
-    SAFE_FREE(s0);
-    SAFE_FREE(s1);
-
-    return sum;
-}
-
-// Get the index of parent for Roulette Wheel selection from Solutions
-// input: fitnesses, # of solutions, sum of fitnesses of solutions
-// output: index of selected solution
-int get_idx_of_parents(double *fitness, int sol_size, double fitnessSum)
-{
-    double point = (double)rand() / ((double)RAND_MAX + 1.0) * fitnessSum;
-    //printf("fitness sum: %f, point: %.2f\n", fitnessSum, point);
-    double sum = 0.0;
-
-    for(int i = 0; i < sol_size; i++)
-    {
-        sum += fitness[i];
-        if(point < sum)
-        {
-            return i;
-        }
-    }
 
     return 0;
 }
@@ -287,4 +155,20 @@ struct Graph read_in_file(char* filename) {
     fclose(in_file);
 
     return init_graph(num_of_vertex, num_of_edges, graph);
+}
+
+void write_out_file(char* file_name, int* vector, int vector_size) {
+    // Write output file
+    FILE* out_file = fopen(file_name, "w");
+    if (out_file == NULL) {
+        printf("Something wrong while opening output file.\n");
+        exit(-1);
+    }
+
+    int flag = vector[0];
+    for (int i = 0; i < vector_size; ++i)
+        // Warning: start index from '1'
+        if (vector[i] == flag)
+            fprintf(out_file, "%d ", i + 1);
+    fclose(out_file);
 }

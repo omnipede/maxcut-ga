@@ -1,9 +1,10 @@
-//
-// Created by 서현규 on 2022/05/03.
-//
+
 
 #ifndef MAXCUT_OPT_GRAPH2_H
 #define MAXCUT_OPT_GRAPH2_H
+
+#include <stdlib.h>
+#include "util.h"
 
 struct Graph {
     int num_of_vertex;
@@ -12,5 +13,6 @@ struct Graph {
 };
 
 struct Graph init_graph(int v, int e, int** table);
+int evaluate(struct Graph, int* sol);
 
 #endif //MAXCUT_OPT_GRAPH2_H
