@@ -14,6 +14,10 @@ void write_out_file(char* file_name, int* vector, int vector_size);
  * @return
  */
 int main(int argc, char *argv[]) {
+
+    char* in_file_name = argv[1];
+    char* out_file_name = argv[2];
+
     // Hyper parameters
     int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
@@ -24,7 +28,7 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
 
     // Read graph data
-    struct Graph graph_data = read_in_file("../maxcut.in");
+    struct Graph graph_data = read_in_file(in_file_name);
     int** weight_table = graph_data.weight_table;
     int num_of_vertex = graph_data.num_of_vertex;
 
@@ -117,7 +121,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Write output file
-    write_out_file("../maxcut.out", solutions[best_solution_index], num_of_vertex);
+    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
         free(solutions[i]);
