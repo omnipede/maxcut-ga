@@ -138,6 +138,11 @@ struct Graph read_in_file(char* filename) {
     int num_of_vertex, num_of_edges;
     int **graph = NULL;
     FILE* in_file = fopen(filename, "r");
+    if (in_file == NULL) {
+        printf("File not found %s\n", filename);
+        exit(-1);
+    }
+
     fscanf(in_file, "%d %d", &num_of_vertex, &num_of_edges);
 
     // Initialize graph
