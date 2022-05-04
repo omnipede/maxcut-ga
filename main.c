@@ -1,6 +1,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <string.h>
 #include "graph.h"
 #include "util.h"
 
@@ -16,36 +19,65 @@ void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION
  */
 int main(int argc, char *argv[]) {
 
-    char* in_file_name = argv[1];
-    char* out_file_name = argv[2];
+    char* in_file_name;
+    char* out_file_name;
+    double CROSSOVER_THRESHOLD;
+    double SELECTION_PRESSURE;
+    int POPULATION_SIZE;
 
-    // Hyper parameters
-    double crossover_thresholds[] = {
-            0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
-    };
-
-    double selection_pressure[] = {
-            3.0, 3.4, 4.0
-    };
-
-    int population_size[] = {
-//            100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
-            100, 400,1000
-    };
-
-    for (int i = 0; i < sizeof(crossover_thresholds) / sizeof(crossover_thresholds[0]); ++i) {
-        for (int j = 0; j < sizeof(selection_pressure) / sizeof(selection_pressure[0]); ++j) {
-            for (int k = 0; k < sizeof(population_size) / sizeof(population_size[0]); ++k) {
-                double ct = crossover_thresholds[i];
-                double sp = selection_pressure[j];
-                int ps = population_size[k];
-
-                for (int l = 0; l < 10; ++l) {
-                    inner(ct, sp, ps, in_file_name, out_file_name);
-                }
-            }
+    char* ptr;
+    int c;
+    while ((c = getopt (argc, argv, "i:o:c:s:p:")) != -1)
+        switch (c) {
+            case 'i':
+                in_file_name = optarg;
+                break;
+            case 'o':
+                out_file_name = optarg;
+                break;
+            case 'c':
+                CROSSOVER_THRESHOLD = strtod(optarg, &ptr);
+                break;
+            case 's':
+                SELECTION_PRESSURE = strtod(optarg, &ptr);
+                break;
+            case 'p':
+                POPULATION_SIZE = (int) strtol(optarg, &ptr, 10);
+                break;
+            default:
+                abort ();
         }
-    }
+
+//    printf("%lf, %lf, %d\n",CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE);
+    inner(CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE, in_file_name, out_file_name);
+//
+//    // Hyper parameters
+//    double crossover_thresholds[] = {
+//            0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
+//    };
+//
+//    double selection_pressure[] = {
+//            3.0, 3.4, 4.0
+//    };
+//
+//    int population_size[] = {
+////            100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+//            100, 400,1000
+//    };
+//
+//    for (int i = 0; i < sizeof(crossover_thresholds) / sizeof(crossover_thresholds[0]); ++i) {
+//        for (int j = 0; j < sizeof(selection_pressure) / sizeof(selection_pressure[0]); ++j) {
+//            for (int k = 0; k < sizeof(population_size) / sizeof(population_size[0]); ++k) {
+//                double ct = crossover_thresholds[i];
+//                double sp = selection_pressure[j];
+//                int ps = population_size[k];
+//
+//                for (int l = 0; l < 10; ++l) {
+//                    inner(ct, sp, ps, in_file_name, out_file_name);
+//                }
+//            }
+//        }
+//    }
 
     return 0;
 }
@@ -146,14 +178,12 @@ void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION
         worst_solution_index = min_avg_max.min_idx;
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
-
-        double avg_of_values = min_avg_max.avg_value;
     }
 
-    printf("%lf,%lf,%d,%d\n", CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE,best_value);
+//    printf("%lf,%lf,%d,%d\n", CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE,best_value);
 
-    FILE* out_file = fopen(out_file_name, "a");
-    fprintf(out_file, "%lf,%lf,%d,%d\n", CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE,best_value);
+    FILE* out_file = fopen(out_file_name, "w");
+    fprintf(out_file, "%d", best_value);
     fclose(out_file);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
