@@ -6,6 +6,7 @@
 
 struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, int* vector, int vector_size);
+void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION_SIZE, char* in_file_name, char* out_file_name);
 
 /**
  * Main func
@@ -19,10 +20,40 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
-    double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
-    double CROSSOVER_THRESHOLD = 0.90; // x10 (0 ~ 1)
-    double EXECUTION_TIME = 177.0;
+    double crossover_thresholds[] = {
+            0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
+    };
+
+    double selection_pressure[] = {
+            3.0, 3.4, 4.0
+    };
+
+    int population_size[] = {
+//            100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+            100, 400,1000
+    };
+
+    for (int i = 0; i < sizeof(crossover_thresholds) / sizeof(crossover_thresholds[0]); ++i) {
+        for (int j = 0; j < sizeof(selection_pressure) / sizeof(selection_pressure[0]); ++j) {
+            for (int k = 0; k < sizeof(population_size) / sizeof(population_size[0]); ++k) {
+                double ct = crossover_thresholds[i];
+                double sp = selection_pressure[j];
+                int ps = population_size[k];
+
+                for (int l = 0; l < 10; ++l) {
+                    inner(ct, sp, ps, in_file_name, out_file_name);
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION_SIZE, char* in_file_name, char* out_file_name) {
+
+    // Hyper parameters
+    double EXECUTION_TIME = 5.0;
 
     // Init randomness
     srand(time(NULL));
@@ -85,8 +116,8 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < num_of_vertex; ++i) {
             double r = rand() / ((double)RAND_MAX + 1.0);
             child[i] = r < CROSSOVER_THRESHOLD
-                    ? solutions[idx_of_mother][i]
-                    : solutions[idx_of_father][i];
+                       ? solutions[idx_of_mother][i]
+                       : solutions[idx_of_father][i];
         }
 
         // Mutation
@@ -117,11 +148,13 @@ int main(int argc, char *argv[]) {
         best_value = values[best_solution_index];
 
         double avg_of_values = min_avg_max.avg_value;
-        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
-    // Write output file
-    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
+    printf("%lf,%lf,%d,%d\n", CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE,best_value);
+
+    FILE* out_file = fopen(out_file_name, "a");
+    fprintf(out_file, "%lf,%lf,%d,%d\n", CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE,best_value);
+    fclose(out_file);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
         free(solutions[i]);
@@ -130,8 +163,6 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < num_of_vertex; i++)
         free(weight_table[i]);
     SAFE_FREE(weight_table);
-
-    return 0;
 }
 
 struct Graph read_in_file(char* filename) {
