@@ -124,13 +124,8 @@ void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION
         }
 
         // Mutation
-        // For each bit
-        for (int i = 0; i < num_of_vertex; ++i) {
-            double r = rand() / ((double) RAND_MAX + 1.0);
-            // Flip a bit in 2% probability
-            if (r < 0.02)
-                child[i] = !child[i];
-        }
+        int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
+        child[mutated_index] = !child[mutated_index];
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
