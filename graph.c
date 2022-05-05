@@ -19,47 +19,41 @@ struct Graph init_graph(int v, int e, int** table) {
 
 int evaluate(struct Graph graph, int* sol) {
 
-    // Find # of 0s in a solution
-    int numOf0s = 0, numOf1s = 0;
-    int sol_length = graph.num_of_vertex;
-    for(int i = 0; i < sol_length; i++){
-        if(sol[i] == 0)
-            numOf0s += 1;
-        else
-            numOf1s += 1;
-    }
+    int solution_size = graph.num_of_vertex;
 
-    // split a solution into two groups, s0 & s1
-    int * s0 = (int*)malloc(numOf0s*sizeof(int));
-    int * s1 = (int*)malloc(numOf1s*sizeof(int));
+    // Split a graph vertexes into two sets
+    int * first_set = (int*)malloc(solution_size*sizeof(int));
+    int * second_set = (int*)malloc(solution_size*sizeof(int));
 
-    // if 0, then write it to s0
-    // else, then write it to s1
-    int idx_of_s0 = 0;
-    int idx_of_s1 = 0;
-    for(int i = 0; i < sol_length; i++) {
+    // Put 0 in first_set and put 1 in second_set
+    int num_of_0 = 0, num_of_1 = 0;
+    for(int i = 0; i < solution_size; i++) {
         if(sol[i] == 0) {
-            s0[idx_of_s0] = i;
-            idx_of_s0++;
+            first_set[num_of_0] = i;
+            num_of_0 += 1;
         }
 
         if(sol[i] == 1) {
-            s1[idx_of_s1] = i;
-            idx_of_s1++;
+            second_set[num_of_1] = i;
+            num_of_1 += 1;
         }
     }
 
+    // Calculate weight between two sets
     int sum = 0;
-    int** weight_table = graph.weight_table;
-    for(int i = 0; i < numOf0s; i++) {
-        for(int j = 0; j < numOf1s; j++) {
-            sum += weight_table[s0[i]][s1[j]];
+    int** edges = graph.weight_table;
+    for(int i = 0; i < num_of_0; i++)
+        for(int j = 0; j < num_of_1; j++) {
+            int from = first_set[i];
+            int to = second_set[j];
+            sum += edges[from][to];
         }
-    }
 
     // release memory
-    SAFE_FREE(s0);
-    SAFE_FREE(s1);
+    if (first_set)
+        free(first_set);
+    if (second_set)
+        free(second_set);
 
     return sum;
 }
