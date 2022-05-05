@@ -4,3 +4,7 @@ cmake-build-*
 *.in
 *.out
 maxcut
+input
+exp
+*.ipynb
+ipynb*
