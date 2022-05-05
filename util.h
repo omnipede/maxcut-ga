@@ -2,7 +2,7 @@
 #ifndef MAXCUT_OPT_UTIL_H
 #define MAXCUT_OPT_UTIL_H
 
-#define SAFE_FREE(a) if(a){free(a); a=NULL;} // for dynamic memory release
+#define SAFE_FREE(ptr) if(ptr != NULL){ free(ptr); ptr = NULL; }
 
 #include <stdlib.h>
 
