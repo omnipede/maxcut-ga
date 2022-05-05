@@ -9,7 +9,7 @@
 struct Graph {
     int num_of_vertex;
     int num_of_edges;
-    int **weight_table;
+    int **edges;
 };
 
 struct Graph init_graph(int v, int e, int** table);

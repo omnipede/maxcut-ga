@@ -2,7 +2,7 @@
 #ifndef MAXCUT_OPT_UTIL_H
 #define MAXCUT_OPT_UTIL_H
 
-#define SAFE_FREE(ptr) if(ptr != NULL){ free(ptr); ptr = NULL; }
+#define MACRO_FREE(ptr) if((ptr) != NULL){ free(ptr); (ptr) = NULL; }
 
 #include <stdlib.h>
 

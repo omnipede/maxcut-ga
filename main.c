@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
     // Read graph data
     struct Graph graph_data = read_in_file(in_file_name);
-    int** weight_table = graph_data.weight_table;
+    int** edges = graph_data.edges;
     int num_of_vertex = graph_data.num_of_vertex;
 
     // Init population data
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
         // Update sum of fitness
         sum_of_fitnesses += fitnesses[worst_solution_index];
 
-        SAFE_FREE(child);
+        MACRO_FREE(child);
 
         // Update best, worst case solution
         min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
@@ -120,12 +120,12 @@ int main(int argc, char *argv[]) {
     write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
-        SAFE_FREE(solutions[i]);
-    SAFE_FREE(solutions);
+        MACRO_FREE(solutions[i]);
+    MACRO_FREE(solutions);
 
     for(int i = 0; i < num_of_vertex; i++)
-        SAFE_FREE(weight_table[i]);
-    SAFE_FREE(weight_table);
+        MACRO_FREE(edges[i]);
+    MACRO_FREE(edges);
 
     return 0;
 }

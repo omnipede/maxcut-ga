@@ -41,7 +41,7 @@ int evaluate(struct Graph graph, int* sol) {
 
     // Calculate weight between two sets
     int sum = 0;
-    int** edges = graph.weight_table;
+    int** edges = graph.edges;
     for(int i = 0; i < num_of_0; i++)
         for(int j = 0; j < num_of_1; j++) {
             int from = first_set[i];
