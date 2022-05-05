@@ -20,6 +20,21 @@ int select_one_from_vector(const double* vector, int vector_size, double sum_of_
     return 0;
 }
 
+void select_two_from_vector(const int* vector, int vector_size, int* buffer) {
+
+    for (int i = 0; i < 50; ++i) {
+        int temp = rand() % vector_size;
+
+        if (vector[temp] >= vector[buffer[0]]) {
+            buffer[0] = temp;
+        }
+
+        if (vector[temp] <= vector[buffer[0]]) {
+            buffer[1] = temp;
+        }
+    }
+}
+
 /**
  * Get minimum index, average value, maximum index from vector
  * @param vector

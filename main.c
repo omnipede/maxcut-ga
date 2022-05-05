@@ -19,9 +19,10 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
-    double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
-    double CROSSOVER_THRESHOLD = 0.90; // x10 (0 ~ 1)
+    int POPULATION_SIZE = 400;
+    double CROSSOVER_THRESHOLD = 0.9;
+    int OFFSPRING_SIZE = 50;
+
     double EXECUTION_TIME = 177.0;
 
     // Init randomness
@@ -34,39 +35,39 @@ int main(int argc, char *argv[]) {
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
-    double* fitnesses = (double*)malloc(POPULATION_SIZE * sizeof(double));
     int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
     for(int i = 0; i < POPULATION_SIZE; i++) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
         // Generate the set of solutions with random values
         for(int j = 0; j < num_of_vertex; j++)
             solutions[i][j] = (int)(((double)rand() / ((double)(RAND_MAX) + 1.0)) * 2);
-        fitnesses[i] = 0;
         values[i] = evaluate(graph_data, solutions[i]);
+    }
+
+    // Init offspring buffer
+    int** offsprings = (int**) malloc( POPULATION_SIZE * sizeof(int*));
+    for (int i = 0; i < POPULATION_SIZE; ++i) {
+        offsprings[i] = (int*) malloc(num_of_vertex * sizeof(int));
+        for (int j = 0; j < num_of_vertex; ++j)
+            offsprings[i][j] = 0;
     }
 
     // update worst and best values
     struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
 
-    int worst_solution_index = min_avg_max.min_idx;
     int best_solution_index = min_avg_max.max_idx;
-
-    int worst_value = values[worst_solution_index];
     int best_value = values[best_solution_index];
 
     // Update fitness of each solution
-    double sum_of_fitnesses = 0;
-    for (int i = 0; i < POPULATION_SIZE; ++i) {
-        int ci = values[i];
-        int cw = worst_value;
-        int cb = best_value;
-
-        fitnesses[i] = (double)(ci - cw) + (cb - cw) / (SELECTION_PRESSURE - 1.0);
-        sum_of_fitnesses += fitnesses[i];
-    }
-
+    int generation = 0;
     clock_t start = clock();
     while(1) {
+        generation += 1;
+        if (generation > 2000) {
+            OFFSPRING_SIZE = POPULATION_SIZE;
+            // TODO selection count ?
+        }
+
         clock_t now = clock();
         double time_spent = (double)(now - start) / CLOCKS_PER_SEC;
 
@@ -74,50 +75,54 @@ int main(int argc, char *argv[]) {
             break;
 
         // Selection
-        int idx_of_mother = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-        int idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        int* parents = (int*) malloc(sizeof (int) * 2);
+        select_two_from_vector(values, POPULATION_SIZE, parents);
 
-        for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
-            idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        int idx_of_mother = parents[0];
+        int idx_of_father = parents[1];
+        SAFE_FREE(parents);
 
         // Crossover
-        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
-        for (int i = 0; i < num_of_vertex; ++i) {
-            double r = rand() / ((double)RAND_MAX + 1.0);
-            child[i] = r < CROSSOVER_THRESHOLD
-                    ? solutions[idx_of_mother][i]
-                    : solutions[idx_of_father][i];
+        for (int i = 0; i < OFFSPRING_SIZE; ++i) {
+            for (int j = 0; j < num_of_vertex; ++j) {
+                double r = rand() / ((double)RAND_MAX + 1.0);
+                offsprings[i][j] = r < CROSSOVER_THRESHOLD
+                                   ? solutions[idx_of_mother][j]
+                                   : solutions[idx_of_father][j];
+            }
         }
 
         // Mutation
-        int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
-        child[mutated_index] = !child[mutated_index];
+        if (generation > 200) {
+            for (int i = 0; i < OFFSPRING_SIZE; ++i) {
+                int mut_idx = rand() % num_of_vertex;
+                offsprings[i][mut_idx] = !offsprings[i][mut_idx];
+            }
+        }
 
-        // Replace with worst case
-        for (int i = 0; i < num_of_vertex; ++i)
-            solutions[worst_solution_index][i] = child[i];
+        // Replace with random
+        for (int i = 0; i < OFFSPRING_SIZE; ++i) {
+            // Take one from population to replace
+            int replaced_idx = rand() % POPULATION_SIZE;
+            while(replaced_idx == best_solution_index)
+                replaced_idx = rand() % POPULATION_SIZE;
 
-        // Before update value, reduce sum of fitness
-        sum_of_fitnesses -= fitnesses[worst_solution_index];
+            // Replace with one offspring
+            for (int j = 0; j < num_of_vertex; ++j)
+                solutions[replaced_idx][j] = offsprings[i][j];
 
-        // Update value of replaced solution
-        values[worst_solution_index] = evaluate(graph_data, child);
-        fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
-
-        // Update sum of fitness
-        sum_of_fitnesses += fitnesses[worst_solution_index];
-
-        SAFE_FREE(child);
+            // Recalculate value of replaced offsprings
+            values[replaced_idx] = evaluate(graph_data, solutions[replaced_idx]);
+        }
 
         // Update best, worst case solution
         min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
 
-        worst_solution_index = min_avg_max.min_idx;
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
         double avg_of_values = min_avg_max.avg_value;
-        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+        printf("%.2f, %d, %d, %.2f\n", time_spent, generation, best_value, avg_of_values);
     }
 
     // Write output file
@@ -126,6 +131,10 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < POPULATION_SIZE; i++)
         free(solutions[i]);
     SAFE_FREE(solutions);
+
+    for(int i = 0; i < OFFSPRING_SIZE; i++)
+        free(offsprings[i]);
+    SAFE_FREE(offsprings);
 
     for(int i = 0; i < num_of_vertex; i++)
         free(weight_table[i]);
