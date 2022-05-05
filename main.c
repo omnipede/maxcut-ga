@@ -38,9 +38,14 @@ int main(int argc, char *argv[]) {
     int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
     for(int i = 0; i < POPULATION_SIZE; i++) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
+        for (int j = 0; j < num_of_vertex; ++j)
+            solutions[i][j] = 0;
+        int iter = rand() % num_of_vertex;
+        for (int j = 0; j < iter; ++j)
+            solutions[i][rand() % num_of_vertex] = 1;
         // Generate the set of solutions with random values
-        for(int j = 0; j < num_of_vertex; j++)
-            solutions[i][j] = (int)(((double)rand() / ((double)(RAND_MAX) + 1.0)) * 2);
+//        for(int j = 0; j < num_of_vertex; j++)
+//            solutions[i][j] = (int)(((double)rand() / ((double)(RAND_MAX) + 1.0)) * 2);
         fitnesses[i] = 0;
         values[i] = evaluate(graph_data, solutions[i]);
     }
@@ -90,13 +95,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Mutation
-        // For each bit
-        for (int i = 0; i < num_of_vertex; ++i) {
-            double r = rand() / ((double) RAND_MAX + 1.0);
-            // Flip a bit in 2% probability
-            if (r < 0.02)
-                child[i] = !child[i];
-        }
+        int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
+        child[mutated_index] = !child[mutated_index];
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
