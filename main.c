@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <string.h>
 #include "graph.h"
 #include "util.h"
 
@@ -50,34 +49,6 @@ int main(int argc, char *argv[]) {
 
 //    printf("%lf, %lf, %d\n",CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE);
     inner(CROSSOVER_THRESHOLD, SELECTION_PRESSURE, POPULATION_SIZE, in_file_name, out_file_name);
-//
-//    // Hyper parameters
-//    double crossover_thresholds[] = {
-//            0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
-//    };
-//
-//    double selection_pressure[] = {
-//            3.0, 3.4, 4.0
-//    };
-//
-//    int population_size[] = {
-////            100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
-//            100, 400,1000
-//    };
-//
-//    for (int i = 0; i < sizeof(crossover_thresholds) / sizeof(crossover_thresholds[0]); ++i) {
-//        for (int j = 0; j < sizeof(selection_pressure) / sizeof(selection_pressure[0]); ++j) {
-//            for (int k = 0; k < sizeof(population_size) / sizeof(population_size[0]); ++k) {
-//                double ct = crossover_thresholds[i];
-//                double sp = selection_pressure[j];
-//                int ps = population_size[k];
-//
-//                for (int l = 0; l < 10; ++l) {
-//                    inner(ct, sp, ps, in_file_name, out_file_name);
-//                }
-//            }
-//        }
-//    }
 
     return 0;
 }
@@ -153,8 +124,13 @@ void inner(double CROSSOVER_THRESHOLD, double SELECTION_PRESSURE, int POPULATION
         }
 
         // Mutation
-        int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
-        child[mutated_index] = !child[mutated_index];
+        // For each bit
+        for (int i = 0; i < num_of_vertex; ++i) {
+            double r = rand() / ((double) RAND_MAX + 1.0);
+            // Flip a bit in 2% probability
+            if (r < 0.02)
+                child[i] = !child[i];
+        }
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
