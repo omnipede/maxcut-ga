@@ -19,9 +19,9 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
-    double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
-    double CROSSOVER_THRESHOLD = 0.90; // x10 (0 ~ 1)
+    int POPULATION_SIZE = 378; // 100, 200, 300, 400, ..., 1000
+    double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
+    double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
     double EXECUTION_TIME = 175.0;
 
     // Init randomness
