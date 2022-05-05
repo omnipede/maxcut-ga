@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.2; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.90; // x10 (0 ~ 1)
-    double EXECUTION_TIME = 177.0;
+    double EXECUTION_TIME = 175.0;
 
     // Init randomness
     srand(time(NULL));
@@ -38,14 +38,9 @@ int main(int argc, char *argv[]) {
     int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
     for(int i = 0; i < POPULATION_SIZE; i++) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
-        for (int j = 0; j < num_of_vertex; ++j)
-            solutions[i][j] = 0;
-        int iter = rand() % num_of_vertex;
-        for (int j = 0; j < iter; ++j)
-            solutions[i][rand() % num_of_vertex] = 1;
         // Generate the set of solutions with random values
-//        for(int j = 0; j < num_of_vertex; j++)
-//            solutions[i][j] = (int)(((double)rand() / ((double)(RAND_MAX) + 1.0)) * 2);
+        for(int j = 0; j < num_of_vertex; j++)
+            solutions[i][j] = rand() % 2;
         fitnesses[i] = 0;
         values[i] = evaluate(graph_data, solutions[i]);
     }
@@ -62,11 +57,7 @@ int main(int argc, char *argv[]) {
     // Update fitness of each solution
     double sum_of_fitnesses = 0;
     for (int i = 0; i < POPULATION_SIZE; ++i) {
-        int ci = values[i];
-        int cw = worst_value;
-        int cb = best_value;
-
-        fitnesses[i] = (double)(ci - cw) + (cb - cw) / (SELECTION_PRESSURE - 1.0);
+        fitnesses[i] = (double)(values[i] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
         sum_of_fitnesses += fitnesses[i];
     }
 
@@ -129,11 +120,11 @@ int main(int argc, char *argv[]) {
     write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
     for(int i = 0; i < POPULATION_SIZE; i++)
-        free(solutions[i]);
+        SAFE_FREE(solutions[i]);
     SAFE_FREE(solutions);
 
     for(int i = 0; i < num_of_vertex; i++)
-        free(weight_table[i]);
+        SAFE_FREE(weight_table[i]);
     SAFE_FREE(weight_table);
 
     return 0;
