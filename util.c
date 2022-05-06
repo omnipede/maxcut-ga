@@ -34,20 +34,20 @@ struct MinAvgMax get_min_avg_max_from_vector(const int* vector, int vector_size)
     for (int i = 0; i < vector_size; ++i) {
         int v = vector[i];
 
-        if (v > best_value) {
-            best_value = v;
-            best_index = i;
-        }
+        sum_of_values += v;
 
         if (v < worst_value) {
             worst_value = v;
             worst_index = i;
         }
 
-        sum_of_values += v;
+        if (v > best_value) {
+            best_value = v;
+            best_index = i;
+        }
     }
 
-    double avg_value = sum_of_values / (double) vector_size;
+    double avg_value = (double) sum_of_values / (double) vector_size;
 
     struct MinAvgMax ret = {
             worst_index, avg_value, best_index

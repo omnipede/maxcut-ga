@@ -36,10 +36,10 @@ int main(int argc, char *argv[]) {
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
     double* fitnesses = (double*)malloc(POPULATION_SIZE * sizeof(double));
     int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
-    for(int i = 0; i < POPULATION_SIZE; i++) {
+    for(int i = 0; i < POPULATION_SIZE; ++i) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
         // Generate the set of solutions with random values
-        for(int j = 0; j < num_of_vertex; j++)
+        for(int j = 0; j < num_of_vertex; ++j)
             solutions[i][j] = rand() % 2;
         fitnesses[i] = 0;
         values[i] = evaluate(graph_data, solutions[i]);
@@ -155,7 +155,7 @@ struct Graph read_in_file(char* filename) {
 
     // Mark weight of graph
     int from, to, value;
-    for(int i = 0; i < num_of_edges; i++) {
+    for(int i = 0; i < num_of_edges; ++i) {
         fscanf(in_file, "%d %d %d", &from, &to, &value);
         graph[from-1][to-1] = graph[to-1][from-1] =value;
     }
