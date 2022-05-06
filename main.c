@@ -112,9 +112,8 @@ int main(int argc, char *argv[]) {
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
-        // TODO delete
-        double avg_of_values = min_avg_max.avg_value;
-        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+//        double avg_of_values = min_avg_max.avg_value;
+//        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
     // Write output file
