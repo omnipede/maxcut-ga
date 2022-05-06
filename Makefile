@@ -20,4 +20,3 @@ run:
 clean:
 	rm -f *.o
 	rm $(OUT)
-	rm *.out
