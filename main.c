@@ -5,7 +5,7 @@
 #include "util.h"
 
 struct Graph read_in_file(char* filename);
-void write_out_file(char* file_name, int* vector, int vector_size);
+void write_out_file(char* file_name, const int* vector, int vector_size);
 
 /**
  * Main func
@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
+        // TODO delete
         double avg_of_values = min_avg_max.avg_value;
         printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
@@ -119,9 +120,13 @@ int main(int argc, char *argv[]) {
     // Write output file
     write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
+    // Free allocated memory
     for(int i = 0; i < POPULATION_SIZE; i++)
         MACRO_FREE(solutions[i]);
     MACRO_FREE(solutions);
+
+    MACRO_FREE(values);
+    MACRO_FREE(fitnesses);
 
     for(int i = 0; i < num_of_vertex; i++)
         MACRO_FREE(edges[i]);
@@ -131,31 +136,28 @@ int main(int argc, char *argv[]) {
 }
 
 struct Graph read_in_file(char* filename) {
-    int num_of_vertex, num_of_edges;
-    int **graph = NULL;
     FILE* in_file = fopen(filename, "r");
     if (in_file == NULL) {
         printf("File not found %s\n", filename);
         exit(-1);
     }
 
+    int num_of_vertex, num_of_edges;
     fscanf(in_file, "%d %d", &num_of_vertex, &num_of_edges);
 
     // Initialize graph
-    graph = (int**) malloc(sizeof(int*) * num_of_vertex);
+    int **graph = (int**) malloc(sizeof(int*) * num_of_vertex);
     for (int i = 0; i < num_of_vertex; ++i) {
         graph[i] = (int *) malloc(sizeof(int) * num_of_vertex);
-        for (int j = 0; j < num_of_vertex; ++j) {
+        for (int j = 0; j < num_of_vertex; ++j)
             graph[i][j] = 0;
-        }
     }
 
     // Mark weight of graph
+    int from, to, value;
     for(int i = 0; i < num_of_edges; i++) {
-        int from, to, value;
         fscanf(in_file, "%d %d %d", &from, &to, &value);
-        graph[from-1][to-1] = value;
-        graph[to-1][from-1] = value;
+        graph[from-1][to-1] = graph[to-1][from-1] =value;
     }
 
     fclose(in_file);
@@ -163,7 +165,7 @@ struct Graph read_in_file(char* filename) {
     return init_graph(num_of_vertex, num_of_edges, graph);
 }
 
-void write_out_file(char* file_name, int* vector, int vector_size) {
+void write_out_file(char* file_name, const int* vector, int vector_size) {
     // Write output file
     FILE* out_file = fopen(file_name, "w");
     if (out_file == NULL) {
