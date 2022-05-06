@@ -79,14 +79,14 @@ int main(int argc, char *argv[]) {
         // Crossover
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
         for (int i = 0; i < num_of_vertex; ++i) {
-            double r = rand() / ((double)RAND_MAX + 1.0);
+            double r = rand() / (double)RAND_MAX;
             child[i] = r < CROSSOVER_THRESHOLD
                     ? solutions[idx_of_mother][i]
                     : solutions[idx_of_father][i];
         }
 
         // Mutation
-        int mutated_index = (int) (rand() / ((double)RAND_MAX + 1.0) * num_of_vertex) % num_of_vertex;
+        int mutated_index = rand() % num_of_vertex;
         child[mutated_index] = !child[mutated_index];
 
         // Replace with worst case

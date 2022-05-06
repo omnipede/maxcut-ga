@@ -10,7 +10,7 @@
 int select_one_from_vector(const double* vector, int vector_size, double sum_of_vector) {
 
     double sum = 0;
-    double r = sum_of_vector * ((double) rand() / (double) RAND_MAX);
+    double r = sum_of_vector * (rand() / (double) RAND_MAX);
     for (int i = 0; i < vector_size; ++i) {
         sum += vector[i];
         if (sum > r)
