@@ -13,6 +13,43 @@ void write_out_file(char* file_name, const int* vector, int vector_size);
  * @param argv
  * @return
  */
+
+int newIdx=0;
+
+void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
+    visited[vertex]=1;
+    mapping[vertex]=newIdx;
+    newIdx++;
+
+    for(int i=1;i<num_of_vertex;i++){
+        if(graph_data.edges[vertex][i]!=0){
+            if(visited[i]==0){
+                DFS(i, num_of_vertex, visited, graph_data,mapping);
+            }
+        }
+    }
+}
+
+void reorder(struct Graph graph_data, int** reordered_graph){
+    int num_of_vertex=graph_data.num_of_vertex;
+    int* visited = (int*)calloc(num_of_vertex,sizeof(int));
+    int* mapping = (int*)calloc(num_of_vertex,sizeof(int));
+    
+    for(int i=0;i<num_of_vertex;i++){
+        if(visited[i]==0){
+            printf("start with vertex not visited: %d\n",i);
+            DFS(i, graph_data.num_of_vertex, visited, graph_data, mapping);
+        }
+    }
+    for(int i=0;i<num_of_vertex;i++){
+        for(int j=0;j<num_of_vertex;j++){
+            if(graph_data.edges[i][j]!=0){
+                reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     char* in_file_name = argv[1];
@@ -28,8 +65,36 @@ int main(int argc, char *argv[]) {
 
     // Read graph data
     struct Graph graph_data = read_in_file(in_file_name);
-    int** edges = graph_data.edges;
+    //int** edges = graph_data.edges;
     int num_of_vertex = graph_data.num_of_vertex;
+
+    // Reordering 
+    int **reordered_graph = (int**) malloc(sizeof(int*) * num_of_vertex);
+    for (int i = 0; i < num_of_vertex; ++i) {
+        reordered_graph [i] = (int *) malloc(sizeof(int) * num_of_vertex);
+        for (int j = 0; j < num_of_vertex; ++j)
+            reordered_graph [i][j] = 0;
+    }
+    reorder(graph_data, reordered_graph);
+    
+    struct Graph reordered_graph_data= init_graph(num_of_vertex, graph_data.num_of_edges, reordered_graph);
+    int** edges = reordered_graph_data.edges;
+
+// DFS reordering 확인
+/*
+    int temp=0;
+    for (int i = 0; i < num_of_vertex; ++i) {
+        for (int j = 0; j < num_of_vertex; ++j){
+            if(edges[i][j]!=0){
+                temp++;
+                printf("[%d][%d]:%d\n",i,j,edges[i][j]);
+            }
+        }
+    }
+    printf("%d: num of edge\n",temp);
+    return 0;
+*/
+    
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
@@ -41,7 +106,7 @@ int main(int argc, char *argv[]) {
         for(int j = 0; j < num_of_vertex; ++j)
             solutions[i][j] = rand() % 2;
         fitnesses[i] = 0;
-        values[i] = evaluate(graph_data, solutions[i]);
+        values[i] = evaluate(reordered_graph_data, solutions[i]);
     }
 
     // update worst and best values
@@ -75,7 +140,8 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
             idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
 
-        // Crossover
+
+        // Uniform Crossover
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
         for (int i = 0; i < num_of_vertex; ++i) {
             double r = rand() / (double)RAND_MAX;
@@ -83,6 +149,25 @@ int main(int argc, char *argv[]) {
                     ? solutions[idx_of_mother][i]
                     : solutions[idx_of_father][i];
         }
+/*
+        // 3 Cutpoint Crossover
+        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
+        int cutpoint1 = rand()%num_of_vertex;
+        int cutpoint2 = rand()%num_of_vertex;
+        int cutpoint3 = rand()%num_of_vertex;
+        for (int i = 0; i < cutpoint1; ++i) {
+            child[i] = solutions[idx_of_mother][i];
+        }
+        for (int i = cutpoint1; i < cutpoint2; ++i) {
+            child[i] = solutions[idx_of_father][i];
+        }
+        for (int i = cutpoint2; i < cutpoint3; ++i) {
+            child[i] = solutions[idx_of_mother][i];
+        }
+        for (int i = cutpoint3; i < num_of_vertex; ++i) {
+            child[i] = solutions[idx_of_father][i];
+        }
+*/
 
         // Mutation
         int mutated_index = rand() % num_of_vertex;
@@ -96,7 +181,7 @@ int main(int argc, char *argv[]) {
         sum_of_fitnesses -= fitnesses[worst_solution_index];
 
         // Update value of replaced solution
-        values[worst_solution_index] = evaluate(graph_data, child);
+        values[worst_solution_index] = evaluate(reordered_graph_data, child);
         fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
 
         // Update sum of fitness
@@ -165,6 +250,7 @@ struct Graph read_in_file(char* filename) {
 
 void write_out_file(char* file_name, const int* vector, int vector_size) {
     // Write output file
+    // TODO: 리오더링한 버텍스 다시 변환해 결과파일 작성하는 작업 필요
     FILE* out_file = fopen(file_name, "w");
     if (out_file == NULL) {
         printf("Something wrong while opening output file.\n");
