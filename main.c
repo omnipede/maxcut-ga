@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
     int POPULATION_SIZE = 378; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
-    double EXECUTION_TIME = 175.0;
 
     // Init randomness
     srand(time(NULL));
@@ -60,7 +59,7 @@ int main(int argc, char *argv[]) {
         fitnesses[i] = (double)(values[i] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
         sum_of_fitnesses += fitnesses[i];
     }
-
+    double EXECUTION_TIME = num_of_vertex/6;
     clock_t start = clock();
     while(1) {
         clock_t now = clock();
@@ -112,8 +111,8 @@ int main(int argc, char *argv[]) {
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
-//        double avg_of_values = min_avg_max.avg_value;
-//        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+        double avg_of_values = min_avg_max.avg_value;
+        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
     // Write output file
