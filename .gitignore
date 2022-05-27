@@ -8,3 +8,5 @@ input
 exp
 *.ipynb
 ipynb*
+.vscode
+workspace.code*
