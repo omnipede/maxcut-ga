@@ -43,7 +43,7 @@ void reorder(struct Graph graph_data, int** reordered_graph){
     }
     for(int i=0;i<num_of_vertex;i++){
         for(int j=0;j<num_of_vertex;j++){
-            if(graph_data.edges[i][j]!=0){
+            if(graph_data.edges[i][j]!=0&&reordered_graph[mapping[j]][mapping[i]]==0){
                 reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
             }
         }
@@ -149,23 +149,36 @@ int main(int argc, char *argv[]) {
                     ? solutions[idx_of_mother][i]
                     : solutions[idx_of_father][i];
         }
+
 /*
-        // 3 Cutpoint Crossover
+        // Cutpoint Crossover
+        int CUT_NUM=5;
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
-        int cutpoint1 = rand()%num_of_vertex;
-        int cutpoint2 = rand()%num_of_vertex;
-        int cutpoint3 = rand()%num_of_vertex;
-        for (int i = 0; i < cutpoint1; ++i) {
-            child[i] = solutions[idx_of_mother][i];
+        int* cutpoint = (int*) calloc(CUT_NUM, sizeof (int));
+        for(int i=0;i<CUT_NUM;i++){
+            cutpoint[i]=rand()%num_of_vertex;
         }
-        for (int i = cutpoint1; i < cutpoint2; ++i) {
-            child[i] = solutions[idx_of_father][i];
+        for(int i=0;i<CUT_NUM-1;i++){
+            for(int j=1;j<CUT_NUM;j++){
+                if(cutpoint[j]>cutpoint[i]){
+                    int temp=cutpoint[j];
+                    cutpoint[j]=cutpoint[i];
+                    cutpoint[i]=temp;
+                }
+            }
         }
-        for (int i = cutpoint2; i < cutpoint3; ++i) {
-            child[i] = solutions[idx_of_mother][i];
-        }
-        for (int i = cutpoint3; i < num_of_vertex; ++i) {
-            child[i] = solutions[idx_of_father][i];
+        
+        for(int i=0;i<CUT_NUM-1;i++){
+            double r = rand() / (double)RAND_MAX;
+            if(r < CROSSOVER_THRESHOLD){
+                for(int j=cutpoint[i];j<cutpoint[i+1];j++){
+                    child[j] = solutions[idx_of_mother][j];
+                }
+            }else{
+                for(int j=cutpoint[i];j<cutpoint[i+1];j++){
+                    child[j] = solutions[idx_of_father][j];
+                }
+            }
         }
 */
 
