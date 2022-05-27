@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include "graph.h"
 #include "util.h"
 
@@ -19,7 +20,7 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 378; // 100, 200, 300, 400, ..., 1000
+    int POPULATION_SIZE = 40; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
     double EXECUTION_TIME = 175.0;
@@ -89,19 +90,29 @@ int main(int argc, char *argv[]) {
         int mutated_index = rand() % num_of_vertex;
         child[mutated_index] = !child[mutated_index];
 
+        // Do local optimization
+        local_opt(graph_data, child);
+
+        int child_value = evaluate(graph_data, child);
+        int idx_to_replace = worst_solution_index;
+        // if (values[idx_of_father] < child_value)
+        //     idx_to_replace = idx_of_father;
+        // if (values[idx_of_mother] < child_value)
+        //     idx_to_replace = idx_of_mother;
+
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
-            solutions[worst_solution_index][i] = child[i];
+            solutions[idx_to_replace][i] = child[i];
 
         // Before update value, reduce sum of fitness
-        sum_of_fitnesses -= fitnesses[worst_solution_index];
+        sum_of_fitnesses -= fitnesses[idx_to_replace];
 
         // Update value of replaced solution
-        values[worst_solution_index] = evaluate(graph_data, child);
-        fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
+        values[idx_to_replace] = child_value;
+        fitnesses[idx_to_replace] = (double)(values[idx_to_replace] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
 
         // Update sum of fitness
-        sum_of_fitnesses += fitnesses[worst_solution_index];
+        sum_of_fitnesses += fitnesses[idx_to_replace];
 
         MACRO_FREE(child);
 
@@ -112,8 +123,8 @@ int main(int argc, char *argv[]) {
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
-//        double avg_of_values = min_avg_max.avg_value;
-//        printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+       double avg_of_values = min_avg_max.avg_value;
+       printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
     // Write output file
