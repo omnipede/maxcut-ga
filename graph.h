@@ -14,5 +14,7 @@ struct Graph {
 
 struct Graph init_graph(int v, int e, int** table);
 int evaluate(struct Graph, int* sol);
+void local_opt(struct Graph graph, int* solution);
+int isDuplicated(int* child, int** solutions, int POPULATION_SIZE, int num_of_vertex);
 
 #endif //MAXCUT_OPT_GRAPH2_H

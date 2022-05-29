@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 500; // 100, 200, 300, 400, ..., 1000
+    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
 
@@ -132,32 +132,13 @@ int main(int argc, char *argv[]) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
         // Generate the set of solutions with random values
         while(1){
-            int isUniq1=1, isUniq2=1;
             for(int j = 0; j < num_of_vertex; ++j)
                 solutions[i][j] = rand() % 2;
-            for(int p=0;p<i-1;p++){
-                // 이전에 만들어진 해 중 중복해 있는지 검사 
-                for(int j=0;j<num_of_vertex;++j){
-                    if(solutions[i][j]!=solutions[p][j]){
-                        isUniq1=1;
-                        break;
-                    } // 다르면 
-                    else isUniq1=0; // 같으면 
-                }
-                // 반전시켜 중복해 있는지 검사
-                for(int j=0;j<num_of_vertex;++j){
-                    if((!solutions[i][j])!=solutions[p][j]){
-                        isUniq2=1;
-                        break;
-                    }
-                    else isUniq2=0;
-                }
-            }
-            if(isUniq1==1&&isUniq2==1){
+            if(isDuplicated(solutions[i], solutions, i-1, num_of_vertex)==0){
                 fitnesses[i] = 0;
                 values[i] = evaluate(reordered_graph_data, solutions[i]);
                 break;
-            }    
+            }
         }
     }
 
@@ -240,17 +221,28 @@ int main(int argc, char *argv[]) {
         child[mutated_index] = !child[mutated_index];
         */
 
-        // 대체 전에 중복해 있는지 검사
+        
+        // Selection
+        int idx_of_mother = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        int idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+
+        for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
+            idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
+        
+        
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
+        // Uniform Crossover
+        for (int i = 0; i < num_of_vertex; ++i) {
+            double r = rand() / (double)RAND_MAX;
+            child[i] = r < CROSSOVER_THRESHOLD
+                    ? solutions[idx_of_mother][i]
+                    : solutions[idx_of_father][i];
+        }
+        // Mutation
+        int mutated_index = rand() % num_of_vertex;
+        child[mutated_index] = !child[mutated_index];
+        /*
         while(1){
-            // Selection
-            int idx_of_mother = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-            int idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-
-            for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
-                idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-
-
             // Uniform Crossover
             for (int i = 0; i < num_of_vertex; ++i) {
                 double r = rand() / (double)RAND_MAX;
@@ -258,30 +250,16 @@ int main(int argc, char *argv[]) {
                         ? solutions[idx_of_mother][i]
                         : solutions[idx_of_father][i];
             }
-            int isUniq1=1, isUniq2=1;
+            // Mutation
             int mutated_index = rand() % num_of_vertex;
             child[mutated_index] = !child[mutated_index];
-            for(int p=0;p<POPULATION_SIZE;++p){
-                // 이전에 만들어진 해 중 중복해 있는지 검사 
-                for(int j=0;j<num_of_vertex;++j){
-                    if(child[j]!=solutions[p][j]){
-                        isUniq1=1;
-                        break;
-                    } // 다르면 
-                    else isUniq1=0; // 같으면 
-                }
-                // 반전시켜 중복해 있는지 검사
-                for(int j=0;j<num_of_vertex;++j){
-                    if((!child[j])!=solutions[p][j]){
-                        isUniq2=1;
-                        break;
-                    }// 다르면 
-                    else isUniq2=0;// 같으면 
-                }
-            }
-            if(isUniq1==1&&isUniq2==1)break;  
+            if(isDuplicated(child, solutions, POPULATION_SIZE, num_of_vertex)==0)break;
         }
+        */
 
+        // Do local optimization
+        //local_opt(graph_data, child);
+        local_opt(reordered_graph_data, child);
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
