@@ -5,7 +5,7 @@
 #include "util.h"
 
 struct Graph read_in_file(char* filename);
-void write_out_file(char* file_name, const int* vector, int vector_size);
+void write_out_file(char* file_name, const int* vector, int vector_size, int* mapping);
 
 /**
  * Main func
@@ -19,6 +19,7 @@ int newIdx=0;
 void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
     visited[vertex]=1;
     mapping[vertex]=newIdx;
+    //printf("mapping: %d to %d\n",vertex,mapping[vertex]);
     newIdx++;
 
     for(int i=1;i<num_of_vertex;i++){
@@ -30,10 +31,9 @@ void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, i
     }
 }
 
-void reorder(struct Graph graph_data, int** reordered_graph){
+void reorder(struct Graph graph_data, int** reordered_graph,int* mapping){
     int num_of_vertex=graph_data.num_of_vertex;
     int* visited = (int*)calloc(num_of_vertex,sizeof(int));
-    int* mapping = (int*)calloc(num_of_vertex,sizeof(int));
     
     for(int i=0;i<num_of_vertex;i++){
         if(visited[i]==0){
@@ -43,7 +43,7 @@ void reorder(struct Graph graph_data, int** reordered_graph){
     }
     for(int i=0;i<num_of_vertex;i++){
         for(int j=0;j<num_of_vertex;j++){
-            if(graph_data.edges[i][j]!=0&&reordered_graph[mapping[j]][mapping[i]]==0){
+            if(graph_data.edges[i][j]!=0){
                 reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
             }
         }
@@ -75,27 +75,40 @@ int main(int argc, char *argv[]) {
         for (int j = 0; j < num_of_vertex; ++j)
             reordered_graph [i][j] = 0;
     }
-    reorder(graph_data, reordered_graph);
+    int* mapping = (int*)calloc(num_of_vertex,sizeof(int));
+    reorder(graph_data, reordered_graph,mapping);
     
     struct Graph reordered_graph_data= init_graph(num_of_vertex, graph_data.num_of_edges, reordered_graph);
     int** edges = reordered_graph_data.edges;
 
 // DFS reordering 확인
 /*
+    int sum=0;
     int temp=0;
+    for (int i = 0; i < num_of_vertex; ++i) {
+        for (int j = 0; j < num_of_vertex; ++j){
+            if(graph_data.edges[i][j]!=0){
+                sum+=graph_data.edges[i][j];
+                //printf("[%d][%d]:%d\n",i,j,graph_data.edges[i][j]);
+            }
+        }
+    }
+    printf("%d: orig sum of edge\n",sum);
+
+    temp=0;
+    sum=0;
     for (int i = 0; i < num_of_vertex; ++i) {
         for (int j = 0; j < num_of_vertex; ++j){
             if(edges[i][j]!=0){
                 temp++;
-                printf("[%d][%d]:%d\n",i,j,edges[i][j]);
+                sum+=edges[i][j];
+                //printf("[%d][%d]:%d\n",i,j,edges[i][j]);
             }
         }
     }
-    printf("%d: num of edge\n",temp);
-    return 0;
+    printf("%d: new sum of edge\n",sum);
+    return 0;  
 */
-    
-
 /*
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
@@ -144,17 +157,16 @@ int main(int argc, char *argv[]) {
                 fitnesses[i] = 0;
                 values[i] = evaluate(reordered_graph_data, solutions[i]);
                 break;
-            }   
+            }    
         }
     }
-
 
     // update worst and best values
     struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
 
     int worst_solution_index = min_avg_max.min_idx;
     int best_solution_index = min_avg_max.max_idx;
-
+    
     int worst_value = values[worst_solution_index];
     int best_value = values[best_solution_index];
 
@@ -228,7 +240,7 @@ int main(int argc, char *argv[]) {
         child[mutated_index] = !child[mutated_index];
         */
 
-        // 대체 전에 중복해 있는지 검사, 중복해면 뮤테이션 
+        // 대체 전에 중복해 있는지 검사
         int* child = (int*) malloc(sizeof (int) * num_of_vertex);
         while(1){
             // Selection
@@ -249,7 +261,7 @@ int main(int argc, char *argv[]) {
             int isUniq1=1, isUniq2=1;
             int mutated_index = rand() % num_of_vertex;
             child[mutated_index] = !child[mutated_index];
-            for(int p=0;p<POPULATION_SIZE;p++){
+            for(int p=0;p<POPULATION_SIZE;++p){
                 // 이전에 만들어진 해 중 중복해 있는지 검사 
                 for(int j=0;j<num_of_vertex;++j){
                     if(child[j]!=solutions[p][j]){
@@ -299,7 +311,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Write output file
-    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
+    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex,mapping);
+    
 
     // Free allocated memory
     for(int i = 0; i < POPULATION_SIZE; i++)
@@ -308,6 +321,7 @@ int main(int argc, char *argv[]) {
 
     MACRO_FREE(values);
     MACRO_FREE(fitnesses);
+    MACRO_FREE(mapping);
 
     for(int i = 0; i < num_of_vertex; i++)
         MACRO_FREE(edges[i]);
@@ -346,7 +360,7 @@ struct Graph read_in_file(char* filename) {
     return init_graph(num_of_vertex, num_of_edges, graph);
 }
 
-void write_out_file(char* file_name, const int* vector, int vector_size) {
+void write_out_file(char* file_name, const int* vector, int vector_size, int* mapping) {
     // Write output file
     // TODO: 리오더링한 버텍스 다시 변환해 결과파일 작성하는 작업 필요
     FILE* out_file = fopen(file_name, "w");
