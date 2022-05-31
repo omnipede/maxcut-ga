@@ -241,7 +241,7 @@ void local_opt(struct Graph graph, int* solution) {
             
             // Find vertex who have maximal gain
             int vi = 0;
-            int maximal_gain = INT32_MIN;
+            int maximal_gain = INT_MIN;
             for (int i = 0; i < num_of_vertex; i++) {
                 if (locked[i])
                     continue;
@@ -275,7 +275,7 @@ void local_opt(struct Graph graph, int* solution) {
         }
 
         // Choose k that maximize sum of gains from i = 0 to i = k
-        int max_sum_of_gains = INT32_MIN;
+        int max_sum_of_gains = INT_MIN;
         int K = 0;
 
         for (int k = 0; k < num_of_vertex - 1; k++) {
