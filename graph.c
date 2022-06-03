@@ -58,160 +58,17 @@ int evaluate(struct Graph graph, int* sol) {
     return sum;
 }
 
-void KL(struct Graph graph, int* solution) {
-
-    int step = 0;
-    while(1) {
-        int num_of_vertex = graph.num_of_vertex;
-        int* group_a = (int*) malloc( sizeof(int) * num_of_vertex);
-        int* group_b = (int*) malloc( sizeof(int) * num_of_vertex);
-        int group_a_idx = 0, group_b_idx = 0;
-
-        for (int i = 0; i < num_of_vertex; i++) {
-            if (solution[i] == 0)
-                group_a[group_a_idx++] = i;
-            else
-                group_b[group_b_idx++] = i;
-        }
-
-        // Calc d_values for all vertices
-        int* d_values = (int*) malloc(sizeof(int) * num_of_vertex);
-        for (int i = 0; i < num_of_vertex; i++) {
-            int in_degree = 0;
-            int out_degree = 0;
-
-            for (int j = 0; j < num_of_vertex; j += 1) {
-                int weight = graph.edges[i][j];
-                if (solution[i] == solution[j])
-                    in_degree += weight;
-                else
-                    out_degree += weight;
-            }
-
-            d_values[i] = -1 * (out_degree - in_degree);
-        }
-
-        int* visited = (int*) malloc(sizeof(int) * num_of_vertex);
-        for (int i = 0; i < num_of_vertex; i++)
-            visited[i] = 0;
-
-        int* gv = (int*) malloc(sizeof(int) * num_of_vertex);
-        int* ga = (int*) malloc(sizeof(int) * num_of_vertex);
-        int* gb = (int*) malloc(sizeof(int) * num_of_vertex);
-        int g_idx = 0;
-
-        for (int n = 0; n < num_of_vertex / 2; n++) {
-
-            // Find maximal gain
-            int max_gain = -1;
-            int target_a = 0, target_b = 0;
-
-            for (int i = 0; i < group_a_idx; i ++ ) {
-                int a = group_a[i];
-                if (visited[a])
-                    continue;
-
-                for (int j = 0; j < group_b_idx; j++) {
-
-                    int b = group_b[j];
-                    if (visited[b])
-                        continue;
-
-                    int c_ab = graph.edges[a][b];
-                    int gain = d_values[a] + d_values[b] - 2 * c_ab;
-
-                    if (gain > max_gain) {
-                        max_gain = gain;
-                        target_a = a;
-                        target_b = b;
-                    } 
-                }
-            }
-
-            // Update results
-            gv[g_idx] = max_gain;
-            ga[g_idx] = target_a;
-            gb[g_idx] = target_b;
-            g_idx += 1;
-
-            // Mark as visited
-            visited[target_a] = 1;
-            visited[target_b] = 1;
-
-            for (int i = 0; i < group_a_idx; i++) {
-                int x = group_a[i];
-                if (visited[x])
-                    continue;
-
-                int c_xa = graph.edges[x][target_a];
-                int c_xb = graph.edges[x][target_b];
-                d_values[x] += -1 * ( 2 * c_xa - 2 * c_xb );
-            }
-
-            for (int i = 0; i < group_b_idx; i++) {
-                int y = group_b[i];
-                if (visited[y])
-                    continue;
-                
-                int c_yb = graph.edges[y][target_b];
-                int c_ya = graph.edges[y][target_a];
-                d_values[y] += -1 * ( 2 * c_yb - 2 * c_ya );
-            }
-        }
-
-        int max_sum_of_gain = -1;
-        int k_max = 0;
-
-        for (int k = 1; k < g_idx - 1; k++) {
-            int sum_of_gain = 0;
-            for (int i = 0; i <= k; i++)
-                sum_of_gain += gv[i];
-
-            if (sum_of_gain > max_sum_of_gain) {
-                k_max = k;
-                max_sum_of_gain = sum_of_gain;
-            }
-        }
-
-        if (max_sum_of_gain > 0) {
-            for (int i = 0; i <= k_max; i++) {
-                int a = ga[i];
-                int b = gb[i];
-
-                solution[a] = !solution[a];
-                solution[b] = !solution[b];
-            }
-        }
-
-        // free
-        MACRO_FREE(gv);
-        MACRO_FREE(ga);
-        MACRO_FREE(gb);
-
-        MACRO_FREE(visited);
-        MACRO_FREE(d_values);
-
-        MACRO_FREE(group_a);
-        MACRO_FREE(group_b);
-
-        if (max_sum_of_gain <= 0)
-            break;
-
-        if (step >= 1)
-            break;
-        step += 1;
-    }
-}
-
 void local_opt(struct Graph graph, int* solution) {
-    
-    int before_K = 0;
-    while(1) {
 
-        int num_of_vertex = graph.num_of_vertex;
+    int num_of_vertex = graph.num_of_vertex;
+    int* gains = (int*)malloc(sizeof(int) * num_of_vertex);
+    int* locked = (int*)malloc(sizeof(int) * num_of_vertex);
+    int* vis = (int*) malloc(sizeof(int) * num_of_vertex);
+    int* gvis = (int*) malloc(sizeof(int) * num_of_vertex);
+
+    while(1) {
 
         // Compute gains of all vertices
-        int* gains = (int*)malloc(sizeof(int) * num_of_vertex);
         for (int i = 0; i < num_of_vertex; i++) {
             int in_degree = 0;
             int out_degree = 0;
@@ -229,13 +86,10 @@ void local_opt(struct Graph graph, int* solution) {
         }
         
         // Initialize set Q
-        int* locked = (int*)malloc(sizeof(int) * num_of_vertex);
         for (int i = 0; i < num_of_vertex; i += 1)
             locked[i] = 0;
 
         // Iterate for V - 1 times
-        int* vis = (int*) malloc(sizeof(int) * num_of_vertex);
-        int* gvis = (int*) malloc(sizeof(int) * num_of_vertex);
         int vis_idx = 0;
         for (int n = 0; n < num_of_vertex - 1; n++) {
             
@@ -289,24 +143,17 @@ void local_opt(struct Graph graph, int* solution) {
             }
         }
 
-        if (max_sum_of_gains == 0 || K == before_K) {
-            MACRO_FREE(vis);
-            MACRO_FREE(gvis);
-            MACRO_FREE(locked);
-            MACRO_FREE(gains);
+        if (max_sum_of_gains <= 0)
             break;
-        }
-
-        before_K = K;
 
         for (int i = 0; i <= K; i++) {
             int vi = vis[i];
             solution[vi] = !solution[vi];
         }
-
-        MACRO_FREE(vis);
-        MACRO_FREE(gvis);
-        MACRO_FREE(locked);
-        MACRO_FREE(gains);
     }
+
+    MACRO_FREE(vis);
+    MACRO_FREE(gvis);
+    MACRO_FREE(locked);
+    MACRO_FREE(gains);
 }
