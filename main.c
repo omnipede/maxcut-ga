@@ -20,10 +20,9 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 40; // 100, 200, 300, 400, ..., 1000
-    double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
+    int POPULATION_SIZE = 100; // 100, 200, 300, 400, ..., 1000
+    double SELECTION_PRESSURE = 3.0; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
-    double EXECUTION_TIME = 175.0;
 
     // Init randomness
     srand(time(NULL));
@@ -32,6 +31,9 @@ int main(int argc, char *argv[]) {
     struct Graph graph_data = read_in_file(in_file_name);
     int** edges = graph_data.edges;
     int num_of_vertex = graph_data.num_of_vertex;
+
+    double EXECUTION_TIME = 175.0;
+    EXECUTION_TIME = num_of_vertex / 6 - 5;
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
@@ -87,18 +89,64 @@ int main(int argc, char *argv[]) {
         }
 
         // Mutation
-        int mutated_index = rand() % num_of_vertex;
-        child[mutated_index] = !child[mutated_index];
+        int maximum_mutation_count = (int)(num_of_vertex * 0.03);
+        int mutated_count = rand() % maximum_mutation_count + 1;
+        for (int i = 0; i < mutated_count; i++) {
+            int mutated_index = rand() % num_of_vertex;
+            child[mutated_index] = !child[mutated_index];
+        }
 
         // Do local optimization
         local_opt(graph_data, child);
 
+        // Check equality
+        int equal_solution_count = 0;
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            
+            // Solution i 와 child 가 동일한지 확인한다.
+            int is_equal = 1;
+            for (int j = 0; j < num_of_vertex; j++) {
+                if (solutions[i][j] != child[j]) {
+                    is_equal = 0;
+                    break;
+                }
+            }
+
+            if (is_equal) {
+                equal_solution_count += 1;
+                break;
+            }
+        }
+
+        if (equal_solution_count >= 1)
+            continue;
+
+        // Replace
         int child_value = evaluate(graph_data, child);
         int idx_to_replace = worst_solution_index;
-        // if (values[idx_of_father] < child_value)
-        //     idx_to_replace = idx_of_father;
-        // if (values[idx_of_mother] < child_value)
-        //     idx_to_replace = idx_of_mother;
+
+        if (values[idx_of_father] >= child_value && values[idx_of_mother] < child_value)
+            idx_to_replace = idx_of_mother;
+
+        else if (values[idx_of_father] <= child_value && values[idx_of_mother] > child_value)
+            idx_to_replace = idx_of_father;
+
+        else if (values[idx_of_father] < child_value && values[idx_of_mother] < child_value) {
+
+            int diff_with_mother = 0;
+            int diff_with_father = 0;
+            for (int i = 0; i < num_of_vertex; i++) {
+                if (solutions[idx_of_mother][i] != child[i])
+                    diff_with_mother += 1;
+                if (solutions[idx_of_father][i] != child[i])
+                    diff_with_father += 1;
+            }
+
+            // 두 부모 중에서 좀 더 유사한 부모와 변환
+            idx_to_replace = (diff_with_mother > diff_with_father) 
+                ? idx_of_father 
+                : idx_of_mother;
+        }
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
