@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {
 
     // Hyper parameters
     int POPULATION_SIZE = 100; // 100, 200, 300, 400, ..., 1000
-    double SELECTION_PRESSURE = 3.0; // x10 (3 ~ 4)
 
     // Init randomness
     srand(time(NULL));
@@ -33,63 +32,72 @@ int main(int argc, char *argv[]) {
 
     double EXECUTION_TIME = 175.0;
     EXECUTION_TIME = num_of_vertex / 6 - 5;
-
-    // Init population data
-    int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
-    int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
-    for(int i = 0; i < POPULATION_SIZE; ++i) {
-        solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
-        // Generate the set of solutions with random values
-        for(int j = 0; j < num_of_vertex; ++j)
-            solutions[i][j] = rand() % 2;
-        values[i] = evaluate(graph_data, solutions[i]);
-    }
-
-    // update worst and best values
-    struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
-
-    int worst_solution_index = min_avg_max.min_idx;
-    int best_solution_index = min_avg_max.max_idx;
-
-    int worst_value = values[worst_solution_index];
-    int best_value = values[best_solution_index];
-
-
     clock_t start = clock();
-    while(1) {
+
+    while(1){
         clock_t now = clock();
         double time_spent = (double)(now - start) / CLOCKS_PER_SEC;
-
         if (time_spent > EXECUTION_TIME)
             break;
+        
+        // Init population data
+        int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
+        int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
+        for(int i = 0; i < POPULATION_SIZE; ++i) {
+            solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
+            // Generate the set of solutions with random values
+            for(int j = 0; j < num_of_vertex; ++j)
+                solutions[i][j] = rand() % 2;
+            values[i] = evaluate(graph_data, solutions[i]);
+        }
 
-        // Do local optimization
-        int temp=rand()%POPULATION_SIZE;
-        local_opt(graph_data, solutions[temp]);
+        // update worst and best values
+        struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
 
-        // Update value
-        values[temp] = evaluate(graph_data, solutions[temp]);
+        int worst_solution_index = min_avg_max.min_idx;
+        int best_solution_index = min_avg_max.max_idx;
 
-        // Update best, worst case solution
-        min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
+        int worst_value = values[worst_solution_index];
+        int best_value = values[best_solution_index];
+        int conversion=0;
+        
+        while(1) {
+            now = clock();
+            time_spent = (double)(now - start) / CLOCKS_PER_SEC;
+            if (time_spent > EXECUTION_TIME || conversion > 1000 )
+                break;
 
-        worst_solution_index = min_avg_max.min_idx;
-        best_solution_index = min_avg_max.max_idx;
-        best_value = values[best_solution_index];
+            // Do local optimization
+            int temp=rand()%POPULATION_SIZE;
+            local_opt(graph_data, solutions[temp]);
 
-       double avg_of_values = min_avg_max.avg_value;
-       printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+            // Update value
+            values[temp] = evaluate(graph_data, solutions[temp]);
+
+            // Update best, worst case solution
+            min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
+            if(best_value==values[best_solution_index]){
+                conversion++;
+            }else{
+                conversion=0;
+            }
+            worst_solution_index = min_avg_max.min_idx;
+            best_solution_index = min_avg_max.max_idx;
+            best_value = values[best_solution_index];
+
+            double avg_of_values = min_avg_max.avg_value;
+            printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+        }
+
+        // Write output file
+        // write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
+
+        // Free allocated memory
+        for(int i = 0; i < POPULATION_SIZE; i++)
+            MACRO_FREE(solutions[i]);
+        MACRO_FREE(solutions);
+        MACRO_FREE(values);
     }
-
-    // Write output file
-    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
-
-    // Free allocated memory
-    for(int i = 0; i < POPULATION_SIZE; i++)
-        MACRO_FREE(solutions[i]);
-    MACRO_FREE(solutions);
-
-    MACRO_FREE(values);
 
     for(int i = 0; i < num_of_vertex; i++)
         MACRO_FREE(edges[i]);
