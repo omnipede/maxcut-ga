@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
     // Hyper parameters
     int POPULATION_SIZE = 100; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.0; // x10 (3 ~ 4)
-    double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
 
     // Init randomness
     srand(time(NULL));
@@ -72,96 +71,26 @@ int main(int argc, char *argv[]) {
         if (time_spent > EXECUTION_TIME)
             break;
 
-        // Selection
-        int idx_of_mother = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-        int idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-
-        for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
-            idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-
-        // Crossover
-        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
-        for (int i = 0; i < num_of_vertex; ++i) {
-            double r = rand() / (double)RAND_MAX;
-            child[i] = r < CROSSOVER_THRESHOLD
-                    ? solutions[idx_of_mother][i]
-                    : solutions[idx_of_father][i];
-        }
-
-        // Mutation
-        int maximum_mutation_count = (int)(num_of_vertex * 0.03);
-        int mutated_count = rand() % maximum_mutation_count + 1;
-        for (int i = 0; i < mutated_count; i++) {
-            int mutated_index = rand() % num_of_vertex;
-            child[mutated_index] = !child[mutated_index];
-        }
-
         // Do local optimization
+        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
+        for(int i=0;i<num_of_vertex;i++)
+            child[i]=rand()%2;
         local_opt(graph_data, child);
 
-        // Check equality
-        int equal_solution_count = 0;
-        for (int i = 0; i < POPULATION_SIZE; i++) {
-            
-            // Solution i 와 child 가 동일한지 확인한다.
-            int is_equal = 1;
-            for (int j = 0; j < num_of_vertex; j++) {
-                if (solutions[i][j] != child[j]) {
-                    is_equal = 0;
-                    break;
-                }
-            }
-
-            if (is_equal) {
-                equal_solution_count += 1;
-                break;
-            }
-        }
-
-        if (equal_solution_count >= 1)
-            continue;
-
         // Replace
-        int child_value = evaluate(graph_data, child);
-        int idx_to_replace = worst_solution_index;
-
-        if (values[idx_of_father] >= child_value && values[idx_of_mother] < child_value)
-            idx_to_replace = idx_of_mother;
-
-        else if (values[idx_of_father] <= child_value && values[idx_of_mother] > child_value)
-            idx_to_replace = idx_of_father;
-
-        else if (values[idx_of_father] < child_value && values[idx_of_mother] < child_value) {
-
-            int diff_with_mother = 0;
-            int diff_with_father = 0;
-            for (int i = 0; i < num_of_vertex; i++) {
-                if (solutions[idx_of_mother][i] != child[i])
-                    diff_with_mother += 1;
-                if (solutions[idx_of_father][i] != child[i])
-                    diff_with_father += 1;
-            }
-
-            // 두 부모 중에서 좀 더 유사한 부모와 변환
-            idx_to_replace = (diff_with_mother > diff_with_father) 
-                ? idx_of_father 
-                : idx_of_mother;
-        }
-
-        // Replace with worst case
+        //int temp=rand()%POPULATION_SIZE;
         for (int i = 0; i < num_of_vertex; ++i)
-            solutions[idx_to_replace][i] = child[i];
+            solutions[worst_solution_index][i] = child[i];
 
         // Before update value, reduce sum of fitness
-        sum_of_fitnesses -= fitnesses[idx_to_replace];
+        sum_of_fitnesses -= fitnesses[worst_solution_index];
 
         // Update value of replaced solution
-        values[idx_to_replace] = child_value;
-        fitnesses[idx_to_replace] = (double)(values[idx_to_replace] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
+        values[worst_solution_index] = evaluate(graph_data, child);
+        fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
 
         // Update sum of fitness
-        sum_of_fitnesses += fitnesses[idx_to_replace];
-
+        sum_of_fitnesses += fitnesses[worst_solution_index];
         MACRO_FREE(child);
 
         // Update best, worst case solution
