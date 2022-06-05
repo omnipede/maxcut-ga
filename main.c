@@ -72,26 +72,11 @@ int main(int argc, char *argv[]) {
             break;
 
         // Do local optimization
-        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
-        for(int i=0;i<num_of_vertex;i++)
-            child[i]=rand()%2;
-        local_opt(graph_data, child);
+        int temp=rand()%POPULATION_SIZE;
+        local_opt(graph_data, solutions[temp]);
 
-        // Replace
-        //int temp=rand()%POPULATION_SIZE;
-        for (int i = 0; i < num_of_vertex; ++i)
-            solutions[worst_solution_index][i] = child[i];
-
-        // Before update value, reduce sum of fitness
-        sum_of_fitnesses -= fitnesses[worst_solution_index];
-
-        // Update value of replaced solution
-        values[worst_solution_index] = evaluate(graph_data, child);
-        fitnesses[worst_solution_index] = (double)(values[worst_solution_index] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
-
-        // Update sum of fitness
-        sum_of_fitnesses += fitnesses[worst_solution_index];
-        MACRO_FREE(child);
+        // Update value
+        values[temp] = evaluate(graph_data, solutions[temp]);
 
         // Update best, worst case solution
         min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
