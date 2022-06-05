@@ -36,14 +36,12 @@ int main(int argc, char *argv[]) {
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
-    double* fitnesses = (double*)malloc(POPULATION_SIZE * sizeof(double));
     int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
     for(int i = 0; i < POPULATION_SIZE; ++i) {
         solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
         // Generate the set of solutions with random values
         for(int j = 0; j < num_of_vertex; ++j)
             solutions[i][j] = rand() % 2;
-        fitnesses[i] = 0;
         values[i] = evaluate(graph_data, solutions[i]);
     }
 
@@ -56,12 +54,6 @@ int main(int argc, char *argv[]) {
     int worst_value = values[worst_solution_index];
     int best_value = values[best_solution_index];
 
-    // Update fitness of each solution
-    double sum_of_fitnesses = 0;
-    for (int i = 0; i < POPULATION_SIZE; ++i) {
-        fitnesses[i] = (double)(values[i] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
-        sum_of_fitnesses += fitnesses[i];
-    }
 
     clock_t start = clock();
     while(1) {
@@ -98,7 +90,6 @@ int main(int argc, char *argv[]) {
     MACRO_FREE(solutions);
 
     MACRO_FREE(values);
-    MACRO_FREE(fitnesses);
 
     for(int i = 0; i < num_of_vertex; i++)
         MACRO_FREE(edges[i]);
