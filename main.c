@@ -6,6 +6,9 @@
 
 struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, const int* vector, int vector_size, int* mapping);
+void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping);
+void BFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping);
+void reorder(struct Graph graph_data, int** reordered_graph,int* mapping);
 
 /**
  * Main func
@@ -14,75 +17,14 @@ void write_out_file(char* file_name, const int* vector, int vector_size, int* ma
  * @return
  */
 
-int newIdx=0;
-int front=0, rear=0;
-
-void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
-    visited[vertex]=1;
-    mapping[vertex]=newIdx;
-    //printf("mapping: %d to %d\n",vertex,mapping[vertex]);
-    newIdx++;
-
-    for(int i=1;i<num_of_vertex;i++){
-        if(graph_data.edges[vertex][i]!=0){
-            if(visited[i]==0){
-                DFS(i, num_of_vertex, visited, graph_data,mapping);
-            }
-        }
-    }
-}
-
-void BFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
-    int* queue = (int*)calloc(num_of_vertex,sizeof(int));
-    visited[vertex]=1;
-    queue[rear++]=vertex;
-
-    while(1){
-        if(rear<=front)break;
-        
-        vertex=queue[front++];
-        visited[vertex]=1;
-        mapping[vertex]=newIdx;
-        printf("mapping: %d to %d\n",vertex,mapping[vertex]);
-        newIdx++;
-
-        for(int i=0;i<num_of_vertex;i++){
-            if(graph_data.edges[vertex][i]!=0){
-                if(visited[i]==0){
-                    queue[rear++]=i;
-                    visited[i]=1;
-                }
-            }
-        }
-    }
-}
-
-void reorder(struct Graph graph_data, int** reordered_graph,int* mapping){
-    int num_of_vertex=graph_data.num_of_vertex;
-    int* visited = (int*)calloc(num_of_vertex,sizeof(int));
-
-    for(int i=0;i<num_of_vertex;i++){
-        if(visited[i]==0){
-            printf("start with vertex not visited: %d\n",i);
-            //DFS(i, graph_data.num_of_vertex, visited, graph_data, mapping);
-        }
-    }
-    BFS(0, graph_data.num_of_vertex, visited, graph_data, mapping);
-    for(int i=0;i<num_of_vertex;i++){
-        for(int j=0;j<num_of_vertex;j++){
-            if(graph_data.edges[i][j]!=0){
-                reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
-            }
-        }
-    }
-}
+int newIdx=0, front=0, rear=0;
 
 int main(int argc, char *argv[]) {
     char* in_file_name = argv[1];
     char* out_file_name = argv[2];
 
     // Hyper parameters
-    int POPULATION_SIZE = 400; // 100, 200, 300, 400, ..., 1000
+    int POPULATION_SIZE = 120; // 100, 200, 300, 400, ..., 1000
     double SELECTION_PRESSURE = 3.4; // x10 (3 ~ 4)
     double CROSSOVER_THRESHOLD = 0.249; // x10 (0 ~ 1)
 
@@ -160,32 +102,13 @@ int main(int argc, char *argv[]) {
         while(1){
             for(int j = 0; j < num_of_vertex; ++j)
                 solutions[i][j] = rand() % 2;
-            if(isDuplicated(solutions[i], solutions, i-1, num_of_vertex)==0){
-                // Do local optimization
-                local_opt(reordered_graph_data, solutions[i]);
-                fitnesses[i] = 0;
-                values[i] = evaluate(reordered_graph_data, solutions[i]);
-                break;
-            }
+            if(isDuplicated(solutions[i], solutions, i-1, num_of_vertex)==1)continue;
+
+            fitnesses[i] = 0;
+            values[i] = evaluate(reordered_graph_data, solutions[i]);
+            break;
         }
     }
-    
-/*
-    // Init population data
-    int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
-    double* fitnesses = (double*)malloc(POPULATION_SIZE * sizeof(double));
-    int* values = (int*)malloc(POPULATION_SIZE * sizeof(int));
-    for(int i = 0; i < POPULATION_SIZE; ++i) {
-        solutions[i] = (int*)malloc(num_of_vertex * sizeof(int));
-        // Generate the set of solutions with random values
-        for(int j = 0; j < num_of_vertex; ++j)
-            solutions[i][j] = rand() % 2;
-        // Do local optimization
-        local_opt(reordered_graph_data, solutions[i]);
-        fitnesses[i] = 0;
-        values[i] = evaluate(graph_data, solutions[i]);
-    }
-*/
     // update worst and best values
     struct MinAvgMax min_avg_max = get_min_avg_max_from_vector(values, POPULATION_SIZE);
 
@@ -214,40 +137,34 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < 10 && idx_of_mother == idx_of_father; ++i)
             idx_of_father = select_one_from_vector(fitnesses, POPULATION_SIZE, sum_of_fitnesses);
-
-        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
         
-        /*
+        
         // Uniform Crossover
+        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
         for (int i = 0; i < num_of_vertex; ++i) {
             double r = rand() / (double)RAND_MAX;
             child[i] = r < CROSSOVER_THRESHOLD
                     ? solutions[idx_of_mother][i]
                     : solutions[idx_of_father][i];
         }
+        
+       /*
+        // Cutpoint Crossover
+        int* child = (int*) malloc(sizeof (int) * num_of_vertex);
+        for (int i = 0; i < num_of_vertex; ++i) {
+            double r = rand() / (double)RAND_MAX;
+            child[i] = (i%5) % 2 == 0
+                ? solutions[idx_of_mother][i]
+                : solutions[idx_of_father][i];
+        }
+        */
         // Mutation
         int mutated_index = rand() % num_of_vertex;
         child[mutated_index] = !child[mutated_index];
-        */
 
-        while(1){
-            // Uniform Crossover
-            for (int i = 0; i < num_of_vertex; ++i) {
-                double r = rand() / (double)RAND_MAX;
-                child[i] = r < CROSSOVER_THRESHOLD
-                        ? solutions[idx_of_mother][i]
-                        : solutions[idx_of_father][i];
-            }
-            // Mutation
-            int mutated_index = rand() % num_of_vertex;
-            child[mutated_index] = !child[mutated_index];
-            if(isDuplicated(child, solutions, POPULATION_SIZE, num_of_vertex)==0)break;
-        }
-        
-
-        // Do local optimization
-        //local_opt(graph_data, child);
         local_opt(reordered_graph_data, child);
+
+        if(isDuplicated(child, solutions, POPULATION_SIZE, num_of_vertex)==1)continue;
 
         // Replace with worst case
         for (int i = 0; i < num_of_vertex; ++i)
@@ -329,6 +246,8 @@ struct Graph read_in_file(char* filename) {
 void write_out_file(char* file_name, const int* vector, int vector_size, int* mapping) {
     // Write output file
     // TODO: 리오더링한 버텍스 다시 변환해 결과파일 작성하는 작업 필요
+    
+
     FILE* out_file = fopen(file_name, "w");
     if (out_file == NULL) {
         printf("Something wrong while opening output file.\n");
@@ -341,4 +260,64 @@ void write_out_file(char* file_name, const int* vector, int vector_size, int* ma
         if (vector[i] == flag)
             fprintf(out_file, "%d ", i + 1);
     fclose(out_file);
+}
+
+void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
+    visited[vertex]=1;
+    mapping[vertex]=newIdx;
+    //printf("mapping: %d to %d\n",vertex,mapping[vertex]);
+    newIdx++;
+
+    for(int i=1;i<num_of_vertex;i++){
+        if(graph_data.edges[vertex][i]!=0){
+            if(visited[i]==0){
+                DFS(i, num_of_vertex, visited, graph_data,mapping);
+            }
+        }
+    }
+}
+
+void BFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
+    int* queue = (int*)calloc(num_of_vertex,sizeof(int));
+    visited[vertex]=1;
+    queue[rear++]=vertex;
+
+    while(1){
+        if(rear<=front)break;
+        
+        vertex=queue[front++];
+        visited[vertex]=1;
+        mapping[vertex]=newIdx;
+        printf("mapping: %d to %d\n",vertex,mapping[vertex]);
+        newIdx++;
+
+        for(int i=0;i<num_of_vertex;i++){
+            if(graph_data.edges[vertex][i]!=0){
+                if(visited[i]==0){
+                    queue[rear++]=i;
+                    visited[i]=1;
+                }
+            }
+        }
+    }
+}
+
+void reorder(struct Graph graph_data, int** reordered_graph,int* mapping){
+    int num_of_vertex=graph_data.num_of_vertex;
+    int* visited = (int*)calloc(num_of_vertex,sizeof(int));
+
+    for(int i=0;i<num_of_vertex;i++){
+        if(visited[i]==0){
+            printf("start with vertex not visited: %d\n",i);
+            DFS(i, graph_data.num_of_vertex, visited, graph_data, mapping);
+        }
+    }
+    //BFS(0, graph_data.num_of_vertex, visited, graph_data, mapping);
+    for(int i=0;i<num_of_vertex;i++){
+        for(int j=0;j<num_of_vertex;j++){
+            if(graph_data.edges[i][j]!=0){
+                reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
+            }
+        }
+    }
 }
