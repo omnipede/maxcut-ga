@@ -7,6 +7,11 @@
 
 struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, const int* vector, int vector_size);
+void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping);
+void BFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping);
+void reorder(struct Graph graph_data, int** reordered_graph,int* mapping);
+
+int newIdx=0, front=0, rear=0;
 
 /**
  * Main func
@@ -29,8 +34,21 @@ int main(int argc, char *argv[]) {
 
     // Read graph data
     struct Graph graph_data = read_in_file(in_file_name);
-    int** edges = graph_data.edges;
+    //int** edges = graph_data.edges;
     int num_of_vertex = graph_data.num_of_vertex;
+
+    // Reordering 
+    int **reordered_graph = (int**) malloc(sizeof(int*) * num_of_vertex);
+    for (int i = 0; i < num_of_vertex; ++i) {
+        reordered_graph [i] = (int *) malloc(sizeof(int) * num_of_vertex);
+        for (int j = 0; j < num_of_vertex; ++j)
+            reordered_graph [i][j] = 0;
+    }
+    int* mapping = (int*)calloc(num_of_vertex,sizeof(int));
+    reorder(graph_data, reordered_graph, mapping);
+    
+    struct Graph reordered_graph_data= init_graph(num_of_vertex, graph_data.num_of_edges, reordered_graph);
+    int** edges = reordered_graph_data.edges;
 
     double EXECUTION_TIME = 175.0;
     EXECUTION_TIME = num_of_vertex / 6 - 5;
@@ -45,7 +63,8 @@ int main(int argc, char *argv[]) {
         for(int j = 0; j < num_of_vertex; ++j)
             solutions[i][j] = rand() % 2;
         fitnesses[i] = 0;
-        values[i] = evaluate(graph_data, solutions[i]);
+        //values[i] = evaluate(graph_data, solutions[i]);
+        values[i] = evaluate(reordered_graph_data, solutions[i]);
     }
 
     // update worst and best values
@@ -97,7 +116,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Do local optimization
-        local_opt(graph_data, child);
+        //local_opt(graph_data, child);
+        local_opt(reordered_graph_data, child);
 
         // Check equality
         int equal_solution_count = 0;
@@ -122,7 +142,8 @@ int main(int argc, char *argv[]) {
             continue;
 
         // Replace
-        int child_value = evaluate(graph_data, child);
+        //int child_value = evaluate(graph_data, child);
+        int child_value = evaluate(reordered_graph_data, child);
         int idx_to_replace = worst_solution_index;
 
         if (values[idx_of_father] >= child_value && values[idx_of_mother] < child_value)
@@ -237,4 +258,64 @@ void write_out_file(char* file_name, const int* vector, int vector_size) {
         if (vector[i] == flag)
             fprintf(out_file, "%d ", i + 1);
     fclose(out_file);
+}
+
+void DFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
+    visited[vertex]=1;
+    mapping[vertex]=newIdx;
+    //printf("mapping: %d to %d\n",vertex,mapping[vertex]);
+    newIdx++;
+
+    for(int i=1;i<num_of_vertex;i++){
+        if(graph_data.edges[vertex][i]!=0){
+            if(visited[i]==0){
+                DFS(i, num_of_vertex, visited, graph_data,mapping);
+            }
+        }
+    }
+}
+
+void BFS(int vertex, int num_of_vertex, int* visited, struct Graph graph_data, int* mapping){
+    int* queue = (int*)calloc(num_of_vertex,sizeof(int));
+    visited[vertex]=1;
+    queue[rear++]=vertex;
+
+    while(1){
+        if(rear<=front)break;
+        
+        vertex=queue[front++];
+        visited[vertex]=1;
+        mapping[vertex]=newIdx;
+        printf("mapping: %d to %d\n",vertex,mapping[vertex]);
+        newIdx++;
+
+        for(int i=0;i<num_of_vertex;i++){
+            if(graph_data.edges[vertex][i]!=0){
+                if(visited[i]==0){
+                    queue[rear++]=i;
+                    visited[i]=1;
+                }
+            }
+        }
+    }
+}
+
+void reorder(struct Graph graph_data, int** reordered_graph,int* mapping){
+    int num_of_vertex=graph_data.num_of_vertex;
+    int* visited = (int*)calloc(num_of_vertex,sizeof(int));
+
+    for(int i=0;i<num_of_vertex;i++){
+        if(visited[i]==0){
+            printf("start with vertex not visited: %d\n",i);
+            DFS(i, graph_data.num_of_vertex, visited, graph_data, mapping);
+        }
+    }
+    //BFS(0, graph_data.num_of_vertex, visited, graph_data, mapping);
+    for(int i=0;i<num_of_vertex;i++){
+        for(int j=0;j<num_of_vertex;j++){
+            if(graph_data.edges[i][j]!=0){
+                reordered_graph[mapping[i]][mapping[j]]=graph_data.edges[i][j];
+            }
+        }
+    }
 }
