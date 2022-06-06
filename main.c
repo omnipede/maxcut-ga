@@ -88,12 +88,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Mutation
-        int maximum_mutation_count = (int)(num_of_vertex * 0.03);
-        int mutated_count = rand() % maximum_mutation_count + 1;
-        for (int i = 0; i < mutated_count; i++) {
-            int mutated_index = rand() % num_of_vertex;
-            child[mutated_index] = !child[mutated_index];
-        }
+        int mutated_index = rand() % num_of_vertex;
+        child[mutated_index] = !child[mutated_index];
 
         // Do local optimization
         local_opt(graph_data, child);
@@ -170,8 +166,8 @@ int main(int argc, char *argv[]) {
         best_solution_index = min_avg_max.max_idx;
         best_value = values[best_solution_index];
 
-       double avg_of_values = min_avg_max.avg_value;
-       printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+    //    double avg_of_values = min_avg_max.avg_value;
+    //    printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
 
     // Write output file
