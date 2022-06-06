@@ -7,6 +7,7 @@
 
 struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, const int* vector, int vector_size);
+void write_values_file(char* file_name, int** values, int POPULATION_SIZE, int GENERATION);
 
 /**
  * Main func
@@ -63,12 +64,21 @@ int main(int argc, char *argv[]) {
         fitnesses[i] = (double)(values[i] - worst_value) + (best_value - worst_value) / (SELECTION_PRESSURE - 1.0);
         sum_of_fitnesses += fitnesses[i];
     }
-
+    int GENERATION=0;
     clock_t start = clock();
+    int** save_values= (int**)malloc(1000 * sizeof(int*));
+    for(int i = 0; i < 1000; ++i)
+        save_values[i] = (int*)malloc(POPULATION_SIZE * sizeof(int));
     while(1) {
         clock_t now = clock();
         double time_spent = (double)(now - start) / CLOCKS_PER_SEC;
-
+        if(GENERATION%1000==0){
+            int temp=GENERATION/1000;
+            for(int i=0;i<POPULATION_SIZE;i++){
+                save_values[temp][i]=values[i];
+            }
+        }
+        GENERATION++;
         if (time_spent > EXECUTION_TIME)
             break;
 
@@ -172,11 +182,11 @@ int main(int argc, char *argv[]) {
         best_value = values[best_solution_index];
 
        double avg_of_values = min_avg_max.avg_value;
-       printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
+       //printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
-
+    write_values_file("values.txt",save_values,POPULATION_SIZE,GENERATION);
     // Write output file
-    write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
+    //write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
     // Free allocated memory
     for(int i = 0; i < POPULATION_SIZE; i++)
@@ -236,5 +246,22 @@ void write_out_file(char* file_name, const int* vector, int vector_size) {
         // Warning: start index from '1'
         if (vector[i] == flag)
             fprintf(out_file, "%d ", i + 1);
+    fclose(out_file);
+}
+
+void write_values_file(char* file_name, int** values, int POPULATION_SIZE, int GENERATION) {
+    // Write output file
+    FILE* out_file = fopen(file_name, "w");
+    if (out_file == NULL) {
+        printf("Something wrong while opening output file.\n");
+        exit(-1);
+    }
+    int temp=GENERATION/1000;
+    for(int i=0;i<temp;i++){
+        for(int j=0;j<POPULATION_SIZE;j++){
+            fprintf(out_file,"%d %d\n",i*1000,values[i][j]);
+        }
+    }
+
     fclose(out_file);
 }
