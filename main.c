@@ -9,8 +9,8 @@ struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, const int* vector, int vector_size);
 void write_values_file(char* file_name, int** values, int POPULATION_SIZE, int GENERATION);
 
-int CYCLE=100; // 몇 세대마다 기록할지
-char* save_file_name="values8.txt"; // 기록할 파일 이름
+int CYCLE=10; // 몇 세대마다 기록할지
+char* save_file_name="values5_10.txt"; // 기록할 파일 이름
 
 /**
  * Main func
