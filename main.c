@@ -32,8 +32,7 @@ int main(int argc, char *argv[]) {
     int** edges = graph_data.edges;
     int num_of_vertex = graph_data.num_of_vertex;
 
-    double EXECUTION_TIME = 175.0;
-    EXECUTION_TIME = num_of_vertex / 6 - 5;
+    double EXECUTION_TIME = num_of_vertex / 6 - num_of_vertex / 200;
 
     // Init population data
     int** solutions = (int**)malloc(POPULATION_SIZE * sizeof(int*));
