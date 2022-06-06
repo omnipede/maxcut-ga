@@ -9,6 +9,9 @@ struct Graph read_in_file(char* filename);
 void write_out_file(char* file_name, const int* vector, int vector_size);
 void write_values_file(char* file_name, int** values, int POPULATION_SIZE, int GENERATION);
 
+int CYCLE=100; // 몇 세대마다 기록할지
+char* save_file_name="values8.txt"; // 기록할 파일 이름
+
 /**
  * Main func
  * @param argc
@@ -65,6 +68,7 @@ int main(int argc, char *argv[]) {
         sum_of_fitnesses += fitnesses[i];
     }
     int GENERATION=0;
+    
     clock_t start = clock();
     int** save_values= (int**)malloc(1000 * sizeof(int*));
     for(int i = 0; i < 1000; ++i)
@@ -72,8 +76,8 @@ int main(int argc, char *argv[]) {
     while(1) {
         clock_t now = clock();
         double time_spent = (double)(now - start) / CLOCKS_PER_SEC;
-        if(GENERATION%1000==0){
-            int temp=GENERATION/1000;
+        if(GENERATION%CYCLE==0){
+            int temp=GENERATION/CYCLE;
             for(int i=0;i<POPULATION_SIZE;i++){
                 save_values[temp][i]=values[i];
             }
@@ -184,7 +188,7 @@ int main(int argc, char *argv[]) {
        double avg_of_values = min_avg_max.avg_value;
        //printf("%.2f, %d, %.2f\n", time_spent, best_value, avg_of_values);
     }
-    write_values_file("values.txt",save_values,POPULATION_SIZE,GENERATION);
+    write_values_file(save_file_name,save_values,POPULATION_SIZE,GENERATION);
     // Write output file
     //write_out_file(out_file_name, solutions[best_solution_index], num_of_vertex);
 
@@ -256,10 +260,10 @@ void write_values_file(char* file_name, int** values, int POPULATION_SIZE, int G
         printf("Something wrong while opening output file.\n");
         exit(-1);
     }
-    int temp=GENERATION/1000;
+    int temp=GENERATION/CYCLE;
     for(int i=0;i<temp;i++){
         for(int j=0;j<POPULATION_SIZE;j++){
-            fprintf(out_file,"%d %d\n",i*1000,values[i][j]);
+            fprintf(out_file,"%d %d\n",i*CYCLE,values[i][j]);
         }
     }
 
