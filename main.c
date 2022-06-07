@@ -87,10 +87,6 @@ int main(int argc, char *argv[]) {
                     : solutions[idx_of_father][i];
         }
 
-        // Mutation
-        int mutated_index = rand() % num_of_vertex;
-        child[mutated_index] = !child[mutated_index];
-
         // Do local optimization
         local_opt(graph_data, child);
 
